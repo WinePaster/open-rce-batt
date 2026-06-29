@@ -4,18 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'ble/ble.dart';
 import 'data/data.dart';
 import 'state/state.dart';
 import 'theme/app_theme.dart';
 import 'ui/dashboard/dashboard_page.dart';
+import 'ui/devices/device_list_sheet.dart';
+import 'ui/history/history_screen.dart';
+import 'ui/settings/settings_screen.dart';
 
 /// Public project page (shown in the community disclaimer + Settings → About).
 const String kProjectUrl = 'https://github.com/WinePaster/open-rce-batt';
 
-/// Human-facing version string (mockup: `v0.1.0`). pubspec is 0.1.0+1.
-const String kAppVersionLabel = 'v0.1.0';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -119,9 +121,9 @@ class _RootShellState extends State<RootShell> {
       body: IndexedStack(
         index: _tab.index,
         children: const [
-          _DashboardTab(),
-          _HistoryTab(),
-          _SettingsTab(),
+          DashboardPage(),
+          HistoryScreen(),
+          SettingsScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBarTheme(
@@ -251,121 +253,37 @@ class _ConnectionPill extends StatelessWidget {
       BleLinkState.disconnecting => (AppColors.amber, 'CLOSING'),
       BleLinkState.disconnected => (AppColors.danger, 'OFFLINE'),
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.panel,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.line),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.bluetooth, size: 13, color: color),
-          const SizedBox(width: 6),
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              letterSpacing: 0.5,
-              color: AppColors.text,
+    return InkWell(
+      onTap: () => showDeviceListSheet(context),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.panel,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bluetooth, size: 13, color: color),
+            const SizedBox(width: 6),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Tab bodies. These are lightweight placeholders that observe the provider
-// graph so the wiring is visibly working; the screen agents replace each with
-// the full Dashboard / History / Settings UI.
-// ---------------------------------------------------------------------------
-
-class _DashboardTab extends StatelessWidget {
-  const _DashboardTab();
-
-  @override
-  Widget build(BuildContext context) {
-    // The dashboard's scan button defaults to ConnectionController.startScan;
-    // when the device-list sheet lands, wire [onScanRequested] to open it.
-    return const DashboardPage();
-  }
-}
-
-class _HistoryTab extends StatelessWidget {
-  const _HistoryTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _TabScaffold(
-      icon: Icons.history,
-      title: '歷史 · HISTORY',
-      lines: ['telemetry records + CSV export'],
-    );
-  }
-}
-
-class _SettingsTab extends StatelessWidget {
-  const _SettingsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = context.watch<SettingsController>();
-    return _TabScaffold(
-      icon: Icons.settings,
-      title: '設定 · SETTINGS',
-      lines: [
-        'poll ${settings.pollIntervalMs} ms',
-        'raw packet log: ${settings.rawPacketLog ? "on" : "off"}',
-        kAppVersionLabel,
-      ],
-      footer: TextButton(
-        onPressed: () => showCommunityDisclaimer(context),
-        child: const Text('重看開場聲明'),
-      ),
-    );
-  }
-}
-
-/// Shared placeholder layout for the not-yet-implemented tab bodies.
-class _TabScaffold extends StatelessWidget {
-  const _TabScaffold({
-    required this.icon,
-    required this.title,
-    required this.lines,
-    this.footer,
-  });
-
-  final IconData icon;
-  final String title;
-  final List<String> lines;
-  final Widget? footer;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 42, color: AppColors.amber),
-          const SizedBox(height: 14),
-          Text(title, style: AppTextStyles.cardHeading),
-          const SizedBox(height: 12),
-          for (final line in lines)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text(line, style: AppTextStyles.label),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                letterSpacing: 0.5,
+                color: AppColors.text,
+              ),
             ),
-          if (footer != null) ...[const SizedBox(height: 12), footer!],
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -578,8 +496,8 @@ class _DoNotRelockWarning extends StatelessWidget {
   }
 }
 
-/// GitHub link row (mockup `.ghbtn`). url_launcher is not a dependency, so this
-/// copies the project URL to the clipboard and confirms via a SnackBar.
+/// GitHub link row (mockup `.ghbtn`). Opens the project URL in the external
+/// browser; falls back to copying the link if no browser can handle it.
 class _GitHubButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -587,13 +505,22 @@ class _GitHubButton extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () async {
-          await Clipboard.setData(const ClipboardData(text: kProjectUrl));
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('已複製連結：$kProjectUrl')),
-          );
+          final messenger = ScaffoldMessenger.of(context);
+          final uri = Uri.parse(kProjectUrl);
+          var opened = false;
+          try {
+            opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } catch (_) {
+            opened = false;
+          }
+          if (!opened) {
+            await Clipboard.setData(const ClipboardData(text: kProjectUrl));
+            messenger.showSnackBar(
+              const SnackBar(content: Text('無法開啟瀏覽器，已複製連結：$kProjectUrl')),
+            );
+          }
         },
-        icon: const Icon(Icons.code, size: 16),
+        icon: const Icon(Icons.open_in_new, size: 16),
         label: const Text(
           '查看 GitHub 專案與文件',
           style: TextStyle(fontSize: 12.5),

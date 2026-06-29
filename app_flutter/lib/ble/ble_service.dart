@@ -149,16 +149,17 @@ class BleService {
   // Scanning
   // ---------------------------------------------------------------------------
 
-  /// Start scanning, filtered purely on the vendor service UUID (PROTOCOL.md
-  /// §2 — no name filter). Results arrive on [scanResults]. Auto-stops after
-  /// [timeout].
+  /// Start scanning. We deliberately do NOT pass `withServices`: many devices
+  /// (incl. this hardware) do not advertise their 128-bit service UUID in the
+  /// advertisement packet, so an OS-level service filter would hide them. We
+  /// scan everything and filter in [_onScanResults] (keep named devices and any
+  /// that DO advertise the vendor service). Results arrive on [scanResults].
   Future<void> startScan(
       {Duration timeout = const Duration(seconds: 15)}) async {
     if (FlutterBluePlus.isScanningNow) return;
     _scanSeen.clear();
     _scan.add(const []);
     await FlutterBluePlus.startScan(
-      withServices: [_serviceGuid],
       timeout: timeout,
       androidScanMode: AndroidScanMode.lowLatency,
     );

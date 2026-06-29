@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/state.dart';
+import '../devices/device_list_sheet.dart';
 import '../widgets/industrial_card.dart';
 import 'disconnected_state.dart';
 import 'dvol_bars.dart';
@@ -27,7 +28,10 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final online = context.select<ConnectionController, bool>((c) => c.isOnline);
     if (!online) {
-      return DisconnectedState(onScanRequested: onScanRequested);
+      return DisconnectedState(
+        onScanRequested:
+            onScanRequested ?? () => showDeviceListSheet(context),
+      );
     }
     return const _LiveDashboard();
   }

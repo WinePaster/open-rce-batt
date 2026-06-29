@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/models.dart';
 import '../../state/state.dart';
@@ -17,7 +18,7 @@ import '../util/export_share.dart';
 import '../widgets/industrial.dart';
 
 /// App version shown in About (matches pubspec `version: 0.1.0+1` / mockup).
-const String kAppVersion = 'v0.1.0';
+const String kAppVersion = 'v0.2.1';
 
 /// Community project links (mockup startup disclaimer + About card).
 const String kGithubUrl = 'https://github.com/WinePaster/open-rce-batt';
@@ -333,10 +334,19 @@ class _AboutCard extends StatelessWidget {
   const _AboutCard();
 
   Future<void> _copy(BuildContext context, String url) async {
-    await Clipboard.setData(ClipboardData(text: url));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('已複製連結：$url')));
+    final messenger = ScaffoldMessenger.of(context);
+    var opened = false;
+    try {
+      opened = await launchUrl(Uri.parse(url),
+          mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened) {
+      await Clipboard.setData(ClipboardData(text: url));
+      messenger.showSnackBar(
+          SnackBar(content: Text('無法開啟瀏覽器，已複製連結：$url')));
+    }
   }
 
   @override

@@ -50,6 +50,8 @@ dependencies:
   # CSV / .log export + share sheet
   share_plus: ^10.0.0
   csv: ^6.0.0
+  # open external links (GitHub / docs)
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
