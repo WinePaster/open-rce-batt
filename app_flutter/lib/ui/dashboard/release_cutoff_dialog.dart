@@ -13,6 +13,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import '../../protocol/protocol.dart';
 import '../../theme/app_theme.dart';
 
@@ -118,14 +119,17 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
       }
       Navigator.of(context).pop(ReleaseRequest(creds: creds));
     } on FormatException {
-      setState(() => _error = '驗證值格式錯誤（用十進位或 0x 十六進位）');
+      final l10n = AppLocalizations.of(context);
+      setState(() => _error = l10n.releaseDialogErrorAuthFormat);
     } catch (_) {
-      setState(() => _error = '代理碼需至少 8 碼');
+      final l10n = AppLocalizations.of(context);
+      setState(() => _error = l10n.releaseDialogErrorDealerLength);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Dialog(
       insetPadding: const EdgeInsets.all(26),
       child: ConstrainedBox(
@@ -137,7 +141,7 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                '解除斷電',
+                l10n.commonReleaseCutOff,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -146,7 +150,7 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
               ),
               const SizedBox(height: 5),
               Text(
-                '送出已知安全的「解除」指令(mode 0x06)。可用斷電密碼，或直接輸入你的驗證值。',
+                l10n.releaseDialogBody,
                 style: TextStyle(
                   fontSize: 11.5,
                   height: 1.6,
@@ -158,9 +162,13 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
               Opacity(
                 opacity: _skipAuth ? 0.4 : 1,
                 child: SegmentedButton<_AuthMode>(
-                  segments: const [
-                    ButtonSegment(value: _AuthMode.password, label: Text('密碼')),
-                    ButtonSegment(value: _AuthMode.code, label: Text('進階：我的碼')),
+                  segments: [
+                    ButtonSegment(
+                        value: _AuthMode.password,
+                        label: Text(l10n.releaseDialogAuthModePassword)),
+                    ButtonSegment(
+                        value: _AuthMode.code,
+                        label: Text(l10n.releaseDialogAuthModeCode)),
                   ],
                   selected: {_mode},
                   onSelectionChanged: _skipAuth
@@ -179,10 +187,10 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
                   cursorColor: AppColors.amber,
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: '代理碼 (Dealer code, 連線時自動帶入)',
+                  decoration: InputDecoration(
+                    labelText: l10n.releaseDialogDealerCodeHint,
                     isDense: true,
-                    contentPadding: EdgeInsets.all(12),
+                    contentPadding: const EdgeInsets.all(12),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -193,10 +201,10 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
                   obscureText: true,
                   onChanged: (_) => setState(() {}),
                   onSubmitted: (_) => _submit(),
-                  decoration: const InputDecoration(
-                    labelText: '斷電密碼',
+                  decoration: InputDecoration(
+                    labelText: l10n.releaseDialogPasswordHint,
                     isDense: true,
-                    contentPadding: EdgeInsets.all(12),
+                    contentPadding: const EdgeInsets.all(12),
                   ),
                 ),
               ],
@@ -206,10 +214,10 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
                   style: TextStyle(fontSize: 14, color: context.colors.text),
                   cursorColor: AppColors.amber,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: 'cb (代理碼數值, 例 168 或 0xA8)',
+                  decoration: InputDecoration(
+                    labelText: l10n.releaseDialogCbHint,
                     isDense: true,
-                    contentPadding: EdgeInsets.all(12),
+                    contentPadding: const EdgeInsets.all(12),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -219,10 +227,10 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
                   cursorColor: AppColors.amber,
                   onChanged: (_) => setState(() {}),
                   onSubmitted: (_) => _submit(),
-                  decoration: const InputDecoration(
-                    labelText: 'pwSum (密碼校驗值, 例 204 或 0xCC)',
+                  decoration: InputDecoration(
+                    labelText: l10n.releaseDialogPwSumHint,
                     isDense: true,
-                    contentPadding: EdgeInsets.all(12),
+                    contentPadding: const EdgeInsets.all(12),
                   ),
                 ),
               ],
@@ -245,7 +253,7 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
                     ),
                     Expanded(
                       child: Text(
-                        '實驗：只送 mode、跳過驗證（未證實，備案）',
+                        l10n.releaseDialogSkipAuthToggle,
                         style: TextStyle(
                             fontSize: 11.5, color: context.colors.muted),
                       ),
@@ -259,15 +267,13 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
                     style: const TextStyle(fontSize: 11, color: AppColors.danger)),
               ],
               const SizedBox(height: 14),
-              const _WarnBox(
-                text: '解除後請勿重新上鎖；電容本身過壓／低壓／過溫保護仍持續有效。',
-              ),
+              _WarnBox(text: l10n.releaseDialogWarnBox),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
                     child: _Btn(
-                      label: '取消',
+                      label: l10n.commonCancel,
                       filled: false,
                       onTap: () => Navigator.of(context).pop(),
                     ),
@@ -275,7 +281,7 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
                   const SizedBox(width: 9),
                   Expanded(
                     child: _Btn(
-                      label: '確認解除',
+                      label: l10n.releaseDialogConfirm,
                       filled: true,
                       onTap: _canSubmit ? _submit : null,
                     ),

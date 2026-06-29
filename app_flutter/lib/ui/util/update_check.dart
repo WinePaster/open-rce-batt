@@ -6,6 +6,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,6 +17,7 @@ import '../../theme/app_theme.dart';
 /// "already up to date / offline" SnackBar; false (on-launch) → silent unless
 /// an update exists.
 Future<void> runUpdateCheck(BuildContext context, {required bool manual}) async {
+  final l10n = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
   final info = await PackageInfo.fromPlatform();
   final update = await const UpdateService().checkForUpdate(info.version);
@@ -24,9 +26,9 @@ Future<void> runUpdateCheck(BuildContext context, {required bool manual}) async 
   if (update == null) {
     if (manual) {
       messenger.showSnackBar(
-        const SnackBar(
-          duration: Duration(milliseconds: 1600),
-          content: Text('已是最新版本（或暫時無法連線）'),
+        SnackBar(
+          duration: const Duration(milliseconds: 1600),
+          content: Text(l10n.updateAlreadyLatest),
         ),
       );
     }
@@ -37,17 +39,17 @@ Future<void> runUpdateCheck(BuildContext context, {required bool manual}) async 
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: ctx.colors.panel,
-      title: Text('有新版本 ${update.latestTag}',
+      title: Text(l10n.updateAvailableTitle(update.latestTag),
           style: TextStyle(fontSize: 16, color: ctx.colors.text)),
       content: Text(
-        '目前版本 v${info.version}。前往 GitHub 下載最新版 APK，'
-        '安裝前請先解除安裝舊版（簽章不同無法直接覆蓋）。',
+        l10n.updateAvailableBody(info.version),
         style: TextStyle(fontSize: 12.5, height: 1.6, color: ctx.colors.muted),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: Text('稍後', style: TextStyle(color: ctx.colors.muted)),
+          child: Text(l10n.updateLaterButton,
+              style: TextStyle(color: ctx.colors.muted)),
         ),
         TextButton(
           onPressed: () async {
@@ -56,7 +58,8 @@ Future<void> runUpdateCheck(BuildContext context, {required bool manual}) async 
             await launchUrl(Uri.parse(url),
                 mode: LaunchMode.externalApplication);
           },
-          child: const Text('前往下載', style: TextStyle(color: AppColors.amber)),
+          child: Text(l10n.updateDownloadButton,
+              style: const TextStyle(color: AppColors.amber)),
         ),
       ],
     ),

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -93,6 +95,16 @@ class _OpenRceBattAppState extends State<OpenRceBattApp> {
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
           themeMode: _themeModeOf(settings.themeMode),
+          // i18n wiring -------------------------------------------------------
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: _localeOf(settings.lang), // null => follow device locale
+          // -------------------------------------------------------------------
           home: const RootShell(),
           // Global font bump (×1.15) on top of the user's system text scale.
           builder: (context, child) {
@@ -114,6 +126,14 @@ class _OpenRceBattAppState extends State<OpenRceBattApp> {
         AppThemeMode.light => ThemeMode.light,
         AppThemeMode.dark => ThemeMode.dark,
         AppThemeMode.auto => ThemeMode.system,
+      };
+
+  /// Maps the persisted [AppLang] to a [Locale]. `null` => follow the device
+  /// locale (resolved against [AppLocalizations.supportedLocales]).
+  static Locale? _localeOf(AppLang lang) => switch (lang) {
+        AppLang.system => null,
+        AppLang.zhHant => const Locale('zh'), // zh-Hant (only Chinese shipped)
+        AppLang.en => const Locale('en'),
       };
 }
 
@@ -164,6 +184,7 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: const _BrandAppBar(),
       body: IndexedStack(
@@ -203,21 +224,21 @@ class _RootShellState extends State<RootShell> {
             _tab = _Tab.values[i];
             if (_tab == _Tab.history) _historyEpoch++;
           }),
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.speed_outlined),
-              selectedIcon: Icon(Icons.speed),
-              label: '裝置',
+              icon: const Icon(Icons.speed_outlined),
+              selectedIcon: const Icon(Icons.speed),
+              label: l10n.navDashboard,
             ),
             NavigationDestination(
-              icon: Icon(Icons.history_outlined),
-              selectedIcon: Icon(Icons.history),
-              label: '歷史',
+              icon: const Icon(Icons.history_outlined),
+              selectedIcon: const Icon(Icons.history),
+              label: l10n.navHistory,
             ),
             NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon: Icon(Icons.settings),
-              label: '設定',
+              icon: const Icon(Icons.settings_outlined),
+              selectedIcon: const Icon(Icons.settings),
+              label: l10n.navSettings,
             ),
           ],
         ),
@@ -393,6 +414,7 @@ class _DisclaimerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Dialog(
       insetPadding: const EdgeInsets.all(24),
       child: ConstrainedBox(
@@ -424,10 +446,10 @@ class _DisclaimerDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                '社群自救版 · COMMUNITY EDITION',
+              Text(
+                l10n.disclaimerCommunityEdition,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 10,
                   letterSpacing: 3,
                   color: AppColors.amber,
@@ -444,11 +466,11 @@ class _DisclaimerDialog extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Text(
-                      '我了解，開始使用',
-                      style: TextStyle(
+                      l10n.disclaimerAcknowledgeButton,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1,
                       ),
@@ -469,45 +491,18 @@ class _DisclaimerBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final muted = TextStyle(
       fontSize: 12,
       height: 1.7,
       color: context.colors.muted,
     );
-    final strong = TextStyle(
-      fontSize: 12,
-      height: 1.7,
-      color: context.colors.text,
-      fontWeight: FontWeight.w700,
-    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text.rich(
-          TextSpan(children: [
-            TextSpan(text: '本 App 為', style: muted),
-            TextSpan(text: '社群獨立開發', style: strong),
-            TextSpan(
-              text: '的開源工具，基於公開逆向研究，透過藍牙與您',
-              style: muted,
-            ),
-            TextSpan(text: '已購買的 RCE 智慧電容／電池', style: strong),
-            TextSpan(text: '通訊。', style: muted),
-          ]),
-        ),
+        Text(l10n.disclaimerBodyPara1, style: muted),
         const SizedBox(height: 9),
-        Text.rich(
-          TextSpan(children: [
-            TextSpan(text: '本專案', style: muted),
-            TextSpan(text: '非', style: strong),
-            TextSpan(
-              text: ' RCE 官方產品、與原廠無任何關係，僅供已購買硬體之車主',
-              style: muted,
-            ),
-            TextSpan(text: '個人、非商業', style: strong),
-            TextSpan(text: '用途。', style: muted),
-          ]),
-        ),
+        Text(l10n.disclaimerBodyPara2, style: muted),
       ],
     );
   }
@@ -529,13 +524,14 @@ class _DoNotRelockWarning extends StatelessWidget {
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Icon(Icons.warning_amber_rounded, size: 15, color: AppColors.amber),
-          SizedBox(width: 8),
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              size: 15, color: AppColors.amber),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '解除斷電後請勿重新上鎖；電容本身過壓／低壓／過溫保護仍持續有效。',
-              style: TextStyle(
+              AppLocalizations.of(context).disclaimerDoNotRelock,
+              style: const TextStyle(
                 fontSize: 11,
                 height: 1.5,
                 color: AppColors.amber,
@@ -557,6 +553,7 @@ class _GitHubButton extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () async {
+          final l10n = AppLocalizations.of(context);
           final messenger = ScaffoldMessenger.of(context);
           final uri = Uri.parse(kProjectUrl);
           var opened = false;
@@ -568,14 +565,17 @@ class _GitHubButton extends StatelessWidget {
           if (!opened) {
             await Clipboard.setData(const ClipboardData(text: kProjectUrl));
             messenger.showSnackBar(
-              const SnackBar(duration: Duration(milliseconds: 1600), content: Text('無法開啟瀏覽器，已複製連結：$kProjectUrl')),
+              SnackBar(
+                duration: const Duration(milliseconds: 1600),
+                content: Text(l10n.commonOpenBrowserFailed(kProjectUrl)),
+              ),
             );
           }
         },
         icon: const Icon(Icons.open_in_new, size: 16),
-        label: const Text(
-          '查看 GitHub 專案與文件',
-          style: TextStyle(fontSize: 12.5),
+        label: Text(
+          AppLocalizations.of(context).disclaimerViewGithub,
+          style: const TextStyle(fontSize: 12.5),
         ),
       ),
     );

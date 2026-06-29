@@ -3,8 +3,8 @@
 /// PURE Dart. Persisted as a single key/value row set in our SQLite.
 library;
 
-/// Display language.
-enum AppLang { zhHant, en }
+/// Display language. [system] follows the device locale.
+enum AppLang { system, zhHant, en }
 
 /// Temperature display unit.
 enum TempUnit { celsius, fahrenheit }

@@ -12,6 +12,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import '../../models/models.dart';
 import '../../state/state.dart';
 import '../../theme/app_theme.dart';
@@ -53,22 +54,23 @@ class _ConnectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<SettingsController>();
+    final l10n = AppLocalizations.of(context);
     return IndustrialCard(
-      heading: '連線',
+      heading: l10n.settingsConnectionHeading,
       headingIcon: Icons.bluetooth,
       child: Column(
         children: [
           SettingsRow(
-            label: '自動重連',
-            sub: '連線中斷時自動嘗試重連',
+            label: l10n.settingsAutoReconnectLabel,
+            sub: l10n.settingsAutoReconnectSub,
             trailing: _Toggle(
               value: s.autoReconnect,
               onChanged: s.setAutoReconnect,
             ),
           ),
           SettingsRow(
-            label: '連線時保持螢幕喚醒',
-            sub: '螢幕不自動關閉，方便邊騎邊看（連線時生效）',
+            label: l10n.settingsKeepAwakeLabel,
+            sub: l10n.settingsKeepAwakeSub,
             last: true,
             trailing: _Toggle(
               value: s.backgroundKeepAlive,
@@ -91,26 +93,40 @@ class _DisplayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<SettingsController>();
+    final l10n = AppLocalizations.of(context);
     return IndustrialCard(
-      heading: '顯示',
+      heading: l10n.settingsDisplayHeading,
       headingIcon: Icons.speed,
       child: Column(
         children: [
           SettingsRow(
-            label: '主題',
-            sub: '介面配色（自動：跟隨系統）',
+            label: l10n.settingsThemeLabel,
+            sub: l10n.settingsThemeSub,
             trailing: SegmentedControl<AppThemeMode>(
               selected: s.themeMode,
               onChanged: s.setThemeMode,
-              options: const [
-                (value: AppThemeMode.light, label: '淺色'),
-                (value: AppThemeMode.dark, label: '深色'),
-                (value: AppThemeMode.auto, label: '自動'),
+              options: [
+                (value: AppThemeMode.light, label: l10n.settingsThemeLight),
+                (value: AppThemeMode.dark, label: l10n.settingsThemeDark),
+                (value: AppThemeMode.auto, label: l10n.settingsThemeAuto),
               ],
             ),
           ),
           SettingsRow(
-            label: '溫度單位',
+            label: l10n.settingsLanguageLabel,
+            sub: l10n.settingsLanguageSub,
+            trailing: SegmentedControl<AppLang>(
+              selected: s.lang,
+              onChanged: (v) => context.read<SettingsController>().setLang(v),
+              options: [
+                (value: AppLang.zhHant, label: l10n.settingsLanguageZhHant),
+                (value: AppLang.en, label: l10n.settingsLanguageEnglish),
+                (value: AppLang.system, label: l10n.settingsLanguageSystem),
+              ],
+            ),
+          ),
+          SettingsRow(
+            label: l10n.settingsTempUnitLabel,
             last: true,
             trailing: SegmentedControl<TempUnit>(
               selected: s.tempUnit,
@@ -146,20 +162,21 @@ class _DataCardState extends State<_DataCard> {
     setState(() => _busy = true);
     final tele = context.read<TelemetryController>();
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     try {
       final csv = await tele.exportHistoryCsv();
       if (!csv.contains('\n')) {
-        messenger.showSnackBar(const SnackBar(duration: Duration(milliseconds: 1600), content: Text('沒有可匯出的紀錄')));
+        messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.commonNoRecordsToExport)));
         return;
       }
       await shareTextAsFile(
         content: csv,
         filename: 'open-rce-batt-history-${exportStamp()}.csv',
         mimeType: 'text/csv',
-        subject: 'Open-RCE-Batt 全部資料',
+        subject: l10n.settingsExportSubjectAllData,
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text('匯出失敗：$e')));
+      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.commonExportFailed('$e'))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -168,40 +185,42 @@ class _DataCardState extends State<_DataCard> {
   Future<void> _clear() async {
     final tele = context.read<TelemetryController>();
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     final ok = await _confirm(
       context,
-      title: '清除歷史紀錄',
-      body: '將刪除本機所有遙測歷史。此動作無法復原。',
+      title: l10n.settingsClearHistoryTitle,
+      body: l10n.settingsClearHistoryBody,
       danger: true,
-      confirmLabel: '清除',
+      confirmLabel: l10n.settingsClearConfirm,
     );
     if (!ok) return;
     await tele.clearHistory();
-    messenger.showSnackBar(const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已清除歷史紀錄')));
+    messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.settingsHistoryCleared)));
   }
 
   @override
   Widget build(BuildContext context) {
     final s = context.watch<SettingsController>();
+    final l10n = AppLocalizations.of(context);
     return IndustrialCard(
-      heading: '資料',
+      heading: l10n.settingsDataHeading,
       headingIcon: Icons.description_outlined,
       child: Column(
         children: [
           SettingsRow(
-            label: '自動紀錄',
-            sub: '連線時自動寫入歷史',
+            label: l10n.settingsAutoLogLabel,
+            sub: l10n.settingsAutoLogSub,
             trailing: _Toggle(value: s.autoLog, onChanged: s.setAutoLog),
           ),
           SettingsLinkRow(
             icon: Icons.file_download_outlined,
-            label: '匯出全部資料 (CSV)',
+            label: l10n.settingsExportAllLabel,
             onTap: _exportAll,
             trailing: _busy ? const _SmallSpinner() : null,
           ),
           SettingsLinkRow(
             icon: Icons.delete_outline,
-            label: '清除歷史紀錄',
+            label: l10n.settingsClearHistoryLabel,
             onTap: _clear,
             last: true,
           ),
@@ -230,20 +249,21 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
     setState(() => _busy = true);
     final tele = context.read<TelemetryController>();
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     try {
       final log = await tele.exportLog();
       if (log.trim().isEmpty) {
-        messenger.showSnackBar(const SnackBar(duration: Duration(milliseconds: 1600), content: Text('診斷日誌為空')));
+        messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.settingsLogEmpty)));
         return;
       }
       await shareTextAsFile(
         content: log,
         filename: 'open-rce-batt-${exportStamp()}.log',
         mimeType: 'text/plain',
-        subject: 'Open-RCE-Batt 診斷日誌',
+        subject: l10n.settingsExportSubjectDiagLog,
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text('匯出失敗：$e')));
+      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.commonExportFailed('$e'))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -252,29 +272,31 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
   Future<void> _clearLog() async {
     final tele = context.read<TelemetryController>();
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     final ok = await _confirm(
       context,
-      title: '清除診斷日誌',
-      body: '將刪除本機所有原始 TX/RX 封包紀錄。',
+      title: l10n.settingsClearLogTitle,
+      body: l10n.settingsClearLogBody,
       danger: true,
-      confirmLabel: '清除',
+      confirmLabel: l10n.settingsClearConfirm,
     );
     if (!ok) return;
     await tele.clearLog();
-    messenger.showSnackBar(const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已清除診斷日誌')));
+    messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.settingsLogCleared)));
   }
 
   @override
   Widget build(BuildContext context) {
     final s = context.watch<SettingsController>();
+    final l10n = AppLocalizations.of(context);
     return IndustrialCard(
-      heading: '診斷 / 開發者',
+      heading: l10n.settingsDiagnosticsHeading,
       headingIcon: Icons.bug_report_outlined,
       child: Column(
         children: [
           SettingsRow(
-            label: '記錄原始藍牙封包',
-            sub: '記錄 TX/RX 原始 hex，供回報問題或協助破解未知指令。預設關閉',
+            label: l10n.settingsRawPacketLogLabel,
+            sub: l10n.settingsRawPacketLogSub,
             subHighlight: true,
             trailing: _Toggle(
               value: s.rawPacketLog,
@@ -282,8 +304,8 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
             ),
           ),
           SettingsRow(
-            label: '日誌容量上限',
-            sub: '超過自動輪替覆蓋',
+            label: l10n.settingsLogMaxSizeLabel,
+            sub: l10n.settingsLogMaxSizeSub,
             trailing: SegmentedControl<int>(
               selected: s.logMaxBytes,
               onChanged: s.setLogMaxBytes,
@@ -295,13 +317,13 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
           ),
           SettingsLinkRow(
             icon: Icons.file_download_outlined,
-            label: '匯出診斷日誌 (.log)',
+            label: l10n.settingsExportLogLabel,
             onTap: _exportLog,
             trailing: _busy ? const _SmallSpinner() : null,
           ),
           SettingsLinkRow(
             icon: Icons.delete_outline,
-            label: '清除診斷日誌',
+            label: l10n.settingsClearLogLabel,
             onTap: _clearLog,
             last: true,
           ),
@@ -320,6 +342,7 @@ class _AboutCard extends StatelessWidget {
 
   Future<void> _copy(BuildContext context, String url) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     var opened = false;
     try {
       opened = await launchUrl(Uri.parse(url),
@@ -330,19 +353,20 @@ class _AboutCard extends StatelessWidget {
     if (!opened) {
       await Clipboard.setData(ClipboardData(text: url));
       messenger.showSnackBar(
-          SnackBar(duration: const Duration(milliseconds: 1600), content: Text('無法開啟瀏覽器，已複製連結：$url')));
+          SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.commonOpenBrowserFailed(url))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return IndustrialCard(
-      heading: '關於',
+      heading: l10n.settingsAboutHeading,
       child: Column(
         children: [
           SettingsRow(
-            label: '版本',
-            sub: 'Open-RCE-Batt 社群版',
+            label: l10n.settingsVersionLabel,
+            sub: l10n.settingsVersionSub,
             trailing: FutureBuilder<PackageInfo>(
               future: PackageInfo.fromPlatform(),
               builder: (context, snap) {
@@ -360,22 +384,22 @@ class _AboutCard extends StatelessWidget {
           ),
           SettingsLinkRow(
             icon: Icons.system_update_alt,
-            label: '檢查更新',
+            label: l10n.settingsCheckUpdateLabel,
             onTap: () => runUpdateCheck(context, manual: true),
           ),
           SettingsLinkRow(
             icon: Icons.code,
-            label: 'GitHub 專案頁面',
+            label: l10n.settingsGithubLabel,
             onTap: () => _copy(context, kGithubUrl),
           ),
           SettingsLinkRow(
             icon: Icons.description_outlined,
-            label: '協定文件 PROTOCOL.md',
+            label: l10n.settingsProtocolDocLabel,
             onTap: () => _copy(context, kProtocolUrl),
           ),
           SettingsLinkRow(
             icon: Icons.link,
-            label: '版權與免責聲明',
+            label: l10n.settingsCopyrightLabel,
             onTap: () => _showAbout(context),
             last: true,
           ),
@@ -386,21 +410,19 @@ class _AboutCard extends StatelessWidget {
 }
 
 void _showAbout(BuildContext context) {
+  final l10n = AppLocalizations.of(context);
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: context.colors.panel,
-      title: const Text('版權與免責聲明', style: TextStyle(fontSize: 17)),
+      title: Text(l10n.settingsAboutDialogTitle, style: const TextStyle(fontSize: 17)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '本 App 為社群獨立開發的開源工具，基於公開逆向研究，'
-              '透過藍牙與您已購買的 RCE 智慧電容／電池通訊。\n\n'
-              '本專案非 RCE 官方產品、與原廠無任何關係，'
-              '僅供已購買硬體之車主個人、非商業用途。',
+              l10n.settingsAboutDialogBody,
               style: TextStyle(
                   fontSize: 12.5, height: 1.7, color: context.colors.muted),
             ),
@@ -412,16 +434,16 @@ void _showAbout(BuildContext context) {
                 borderRadius: BorderRadius.circular(9),
                 border: Border.all(color: AppColors.amber.withValues(alpha: 0.28)),
               ),
-              child: const Row(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.warning_amber_rounded,
+                  const Icon(Icons.warning_amber_rounded,
                       size: 15, color: AppColors.amber),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '解除斷電後請勿重新上鎖；電容本身過壓／低壓／過溫保護仍持續有效。',
-                      style: TextStyle(
+                      l10n.settingsAboutDialogWarning,
+                      style: const TextStyle(
                           fontSize: 11, height: 1.5, color: AppColors.amber),
                     ),
                   ),
@@ -434,7 +456,7 @@ void _showAbout(BuildContext context) {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('關閉', style: TextStyle(color: AppColors.amber)),
+          child: Text(l10n.commonClose, style: const TextStyle(color: AppColors.amber)),
         ),
       ],
     ),
@@ -480,8 +502,9 @@ Future<bool> _confirm(
   required String title,
   required String body,
   bool danger = false,
-  String confirmLabel = '確定',
+  String? confirmLabel,
 }) async {
+  final l10n = AppLocalizations.of(context);
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -495,12 +518,12 @@ Future<bool> _confirm(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: Text('取消', style: TextStyle(color: context.colors.muted)),
+          child: Text(l10n.commonCancel, style: TextStyle(color: context.colors.muted)),
         ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(true),
           child: Text(
-            confirmLabel,
+            confirmLabel ?? l10n.commonConfirm,
             style: TextStyle(color: danger ? AppColors.danger : AppColors.amber),
           ),
         ),

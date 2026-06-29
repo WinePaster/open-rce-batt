@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 /// Prompt for a device alias.
@@ -42,13 +43,6 @@ class _AliasDialogState extends State<_AliasDialog> {
   late final TextEditingController _ctrl =
       TextEditingController(text: widget.initial);
 
-  // Suggestion chips (mockup `.achips`).
-  static const List<String> _suggestions = [
-    '電容 #1（前車）',
-    '電容 #2（後備）',
-    '機車電容',
-  ];
-
   @override
   void dispose() {
     _ctrl.dispose();
@@ -62,12 +56,20 @@ class _AliasDialogState extends State<_AliasDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.isRename ? '重新命名' : '儲存裝置';
-    final body = widget.isRename
-        ? '為這顆裝置設定新的別名。'
-        : '已連線成功。為這顆裝置取一個好記的別名，下次可在「已儲存裝置」快速重連。';
-    final saveLabel = widget.isRename ? '儲存' : '儲存別名';
-    final cancelLabel = widget.isRename ? '取消' : '略過';
+    final l10n = AppLocalizations.of(context);
+    final title =
+        widget.isRename ? l10n.devicesAliasRenameTitle : l10n.devicesAliasSaveTitle;
+    final body =
+        widget.isRename ? l10n.devicesAliasRenameBody : l10n.devicesAliasSaveBody;
+    final saveLabel =
+        widget.isRename ? l10n.devicesAliasSave : l10n.devicesAliasSaveAlias;
+    final cancelLabel = widget.isRename ? l10n.commonCancel : l10n.devicesAliasSkip;
+    // Suggestion chips (mockup `.achips`).
+    final suggestions = [
+      l10n.devicesAliasSuggestion1,
+      l10n.devicesAliasSuggestion2,
+      l10n.devicesAliasSuggestion3,
+    ];
 
     return Dialog(
       insetPadding: const EdgeInsets.all(26),
@@ -104,10 +106,10 @@ class _AliasDialogState extends State<_AliasDialog> {
                 cursorColor: AppColors.amber,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
-                  hintText: '例如：電容 #1（前車）',
+                decoration: InputDecoration(
+                  hintText: l10n.devicesAliasHint,
                   isDense: true,
-                  contentPadding: EdgeInsets.all(12),
+                  contentPadding: const EdgeInsets.all(12),
                 ),
               ),
               const SizedBox(height: 8),
@@ -115,7 +117,7 @@ class _AliasDialogState extends State<_AliasDialog> {
                 spacing: 7,
                 runSpacing: 7,
                 children: [
-                  for (final s in _suggestions)
+                  for (final s in suggestions)
                     _Chip(label: s, onTap: () => _ctrl.text = s),
                 ],
               ),

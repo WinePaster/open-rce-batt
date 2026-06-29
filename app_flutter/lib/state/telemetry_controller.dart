@@ -122,6 +122,15 @@ class TelemetryController extends ChangeNotifier {
   /// Stored sample count.
   Future<int> historyCount() => _history.count();
 
+  /// Bucketed trend for the chart (DB-side aggregation).
+  Future<List<HistoryBucket>> historyBuckets(
+          {DateTime? since, required int bucketMs}) =>
+      _history.queryBuckets(since: since, bucketMs: bucketMs);
+
+  /// Range-wide min/max/avg stats over raw rows.
+  Future<HistoryStats> historyStats({DateTime? since}) =>
+      _history.aggregate(since: since);
+
   /// CSV export of matching history rows (for share_plus / file write).
   Future<String> exportHistoryCsv({DateTime? since, int? limit}) =>
       _history.exportCsv(since: since, limit: limit);

@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import '../../state/state.dart';
 import '../../theme/app_theme.dart';
 import '../devices/device_list_sheet.dart';
@@ -43,14 +44,28 @@ class _LiveDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tele = context.watch<TelemetryController>();
     final caps = tele.capabilities;
 
     final typeLabel = _deviceTypeLabel(
+      l10n,
       context.select<ConnectionController, String>((c) => c.connectedDeviceName),
     );
 
-    return ListView(
+    // Resolve the gauge's localized centre-stack labels in the host (the
+    // gauge's painter/widget tree below has no easy place for l10n lookups —
+    // see _deviceTypeLabel). Pass the finished strings into [PvltGauge].
+    final soh = tele.sohBucket;
+    final sohText = soh == null
+        ? l10n.gaugeSohUnknown
+        : l10n.gaugeSohValue(soh, _sohLabel(l10n, soh));
+
+    // Cap content width + centre it so cards don't stretch on tablets/wide.
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: ListView(
       padding: const EdgeInsets.fromLTRB(15, 3, 15, 14),
       children: [
         // ---- detected device type -----------------------------------------
@@ -62,7 +77,7 @@ class _LiveDashboard extends StatelessWidget {
               children: [
                 Icon(Icons.memory, size: 14, color: AppColors.amber),
                 const SizedBox(width: 6),
-                Text('偵測到：$typeLabel',
+                Text(l10n.dashboardDeviceTypeDetected(typeLabel),
                     style: AppTextStyles.label(context)),
               ],
             ),
@@ -70,31 +85,40 @@ class _LiveDashboard extends StatelessWidget {
 
         // ---- PVLT gauge ----------------------------------------------------
         IndustrialCard(
-          child: Center(
-            child: PvltGauge(
-              pvlt: tele.pvlt,
-              fraction: tele.gaugeFraction,
-              sohBucket: tele.sohBucket,
-            ),
+          child: LayoutBuilder(
+            builder: (context, c) {
+              // Size the dial from available width (clamped near the mockup's
+              // 206 so the painter's absolute stroke widths still look right).
+              final s = (c.maxWidth * 0.74).clamp(180.0, 240.0);
+              return Center(
+                child: PvltGauge(
+                  pvlt: tele.pvlt,
+                  fraction: tele.gaugeFraction,
+                  pvltLabel: l10n.gaugePvltLabel,
+                  sohText: sohText,
+                  size: s,
+                ),
+              );
+            },
           ),
         ),
 
         // ---- readout grid --------------------------------------------------
         IndustrialCard(
-          heading: '即時讀數',
+          heading: l10n.dashboardReadoutsHeading,
           headingIcon: Icons.speed,
           child: ReadoutGrid(
             items: [
               // Core readouts (a capacitor reports these): temperature + SVLT.
               Readout(
                 icon: Icons.thermostat,
-                label: '溫度 TEMP',
+                label: l10n.dashboardReadoutTemperatureLabel,
                 value: _fmtInt(tele.temperatureDisplay),
                 unit: tele.temperatureUnitLabel,
               ),
               Readout(
                 icon: Icons.bolt,
-                label: '次電壓 SVLT',
+                label: l10n.dashboardReadoutSvltLabel,
                 value: _fmt1(tele.svlt),
                 unit: 'V',
               ),
@@ -103,14 +127,14 @@ class _LiveDashboard extends StatelessWidget {
               if (tele.current != null)
                 Readout(
                   icon: Icons.electric_bolt,
-                  label: '主電流',
+                  label: l10n.dashboardReadoutCurrentLabel,
                   value: _fmt1(tele.current),
                   unit: 'A',
                 ),
               if (tele.sohBucket != null)
                 Readout(
                   icon: Icons.monitor_heart_outlined,
-                  label: '健康 SOH',
+                  label: l10n.dashboardReadoutSohLabel,
                   value: tele.sohBucket!.toString(),
                   unit: '%',
                 ),
@@ -121,35 +145,44 @@ class _LiveDashboard extends StatelessWidget {
         // ---- DVOL per-cell bars (gated on capability) ----------------------
         if (caps.supportsDvol)
           IndustrialCard(
-            heading: '分串電壓 DVOL',
+            heading: l10n.dashboardDvolHeading,
             headingIcon: Icons.battery_std,
             child: DvolBars(cells: tele.dvol),
           ),
 
         // ---- protection status + controls ----------------------------------
-        const IndustrialCard(
-          heading: '防護狀態 / 模式',
+        IndustrialCard(
+          heading: l10n.dashboardProtectionHeading,
           headingIcon: Icons.shield_outlined,
-          child: StatusControls(),
+          child: const StatusControls(),
         ),
       ],
+        ),
+      ),
     );
   }
 
-  /// Human device-type from the advertised name (RCE-SCAP_II → 超級電容).
+  /// Human device-type from the advertised name (RCE-SCAP_II → Supercapacitor).
   /// Returns null when the name is unknown (hide the chip).
-  static String? _deviceTypeLabel(String name) {
+  static String? _deviceTypeLabel(AppLocalizations l10n, String name) {
     final raw = name.trim();
     if (raw.isEmpty) return null;
     final n = raw.toUpperCase();
     final type = n.contains('SCAP')
-        ? '超級電容'
+        ? l10n.dashboardDeviceTypeSupercapacitor
         : n.contains('BATT')
-            ? '智慧電池'
+            ? l10n.dashboardDeviceTypeSmartBattery
             : (n.contains('POWER') || n.contains('PB'))
-                ? '行動電源'
-                : 'RCE 裝置';
-    return '$type（$raw）';
+                ? l10n.dashboardDeviceTypePowerBank
+                : l10n.dashboardDeviceTypeRceDevice;
+    return l10n.dashboardDeviceTypeWithName(type, raw);
+  }
+
+  /// SOH bucket → localized health label (Good / Fair / Degraded).
+  static String _sohLabel(AppLocalizations l10n, int soh) {
+    if (soh >= 80) return l10n.gaugeSohLabelGood;
+    if (soh >= 50) return l10n.gaugeSohLabelFair;
+    return l10n.gaugeSohLabelDegraded;
   }
 
   static String _fmtInt(double? v) => v == null ? '--' : v.round().toString();

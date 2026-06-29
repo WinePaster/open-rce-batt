@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import '../../models/models.dart';
 import '../../state/state.dart';
 import '../../theme/app_theme.dart';
@@ -23,6 +24,7 @@ class DisconnectedState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final conn = context.watch<ConnectionController>();
     final devices = conn.savedDevices;
 
@@ -41,7 +43,7 @@ class DisconnectedState extends StatelessWidget {
             const _PulseIcon(),
             const SizedBox(height: 24),
             Text(
-              '尚未連線裝置',
+              l10n.disconnectedTitle,
               style: TextStyle(
                 fontSize: 23,
                 letterSpacing: 0.5,
@@ -53,7 +55,7 @@ class DisconnectedState extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 280),
               child: Text(
-                '選擇已儲存的裝置快速重連，或掃描附近的 RCE 電容。',
+                l10n.disconnectedBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14.5,
@@ -70,7 +72,7 @@ class DisconnectedState extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Text(
-                    '快速選擇',
+                    l10n.disconnectedQuickSelectHeading,
                     style: TextStyle(
                       fontSize: 10,
                       letterSpacing: 2,
@@ -97,7 +99,7 @@ class DisconnectedState extends StatelessWidget {
                   onPressed: () =>
                       (onScanRequested ?? () => conn.startScan())(),
                   icon: const Icon(Icons.bluetooth, size: 16),
-                  label: const Text('掃描其他裝置'),
+                  label: Text(l10n.disconnectedScanButton),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
@@ -162,7 +164,7 @@ class _QuickPick extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        _metaLine(device),
+                        _metaLine(AppLocalizations.of(context), device),
                         style: AppTextStyles.mono(context).copyWith(
                           fontSize: 10.5,
                           color: context.colors.muted,
@@ -191,12 +193,12 @@ class _QuickPick extends StatelessWidget {
     );
   }
 
-  static String _metaLine(SavedDevice d) {
+  static String _metaLine(AppLocalizations l10n, SavedDevice d) {
     final parts = <String>[];
     if (d.lastValue != null) {
-      parts.add('上次 ${d.lastValue!.toStringAsFixed(2)} V');
+      parts.add(l10n.quickPickLastValue(d.lastValue!.toStringAsFixed(2)));
     }
-    parts.add(_relativeTime(d.lastSeen));
+    parts.add(_relativeTime(l10n, d.lastSeen));
     return parts.join(' · ');
   }
 }
@@ -296,12 +298,12 @@ int _recencyLevel(DateTime? lastSeen) {
   return 1;
 }
 
-/// Coarse relative-time label (mockup "剛剛 / 2 分鐘前 / 2 天前").
-String _relativeTime(DateTime? t) {
-  if (t == null) return '從未連線';
+/// Coarse relative-time label (e.g. "Just now / 2 minutes ago / 2 days ago").
+String _relativeTime(AppLocalizations l10n, DateTime? t) {
+  if (t == null) return l10n.relativeNever;
   final d = DateTime.now().difference(t);
-  if (d.inSeconds < 60) return '剛剛';
-  if (d.inMinutes < 60) return '${d.inMinutes} 分鐘前';
-  if (d.inHours < 24) return '${d.inHours} 小時前';
-  return '${d.inDays} 天前';
+  if (d.inSeconds < 60) return l10n.relativeJustNow;
+  if (d.inMinutes < 60) return l10n.relativeMinutesAgo(d.inMinutes);
+  if (d.inHours < 24) return l10n.relativeHoursAgo(d.inHours);
+  return l10n.relativeDaysAgo(d.inDays);
 }

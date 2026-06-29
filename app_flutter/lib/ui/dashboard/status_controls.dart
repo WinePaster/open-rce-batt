@@ -15,6 +15,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import '../../protocol/protocol.dart';
 import '../../state/state.dart';
 import '../../theme/app_theme.dart';
@@ -26,11 +27,12 @@ class StatusControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tele = context.watch<TelemetryController>();
     final caps = tele.capabilities;
     final online = context.select<ConnectionController, bool>((c) => c.isOnline);
 
-    final runStatus = _runStatusOf(tele.mode);
+    final runStatus = _runStatusOf(l10n, tele.mode);
     final capWarn = _capacitorWarning(tele);
     final cutOff = _isCutOff(tele.mode);
 
@@ -43,7 +45,7 @@ class StatusControls extends StatelessWidget {
             Expanded(
               child: _Badge(
                 icon: Icons.power_settings_new,
-                label: '運行模式',
+                label: l10n.statusBadgeRunModeLabel,
                 value: runStatus.label,
                 tone: runStatus.tone,
               ),
@@ -52,8 +54,8 @@ class StatusControls extends StatelessWidget {
             Expanded(
               child: _Badge(
                 icon: Icons.monitor_heart_outlined,
-                label: '電容狀態',
-                value: capWarn ? '警告' : '正常',
+                label: l10n.statusBadgeCapacitorLabel,
+                value: capWarn ? l10n.commonWarning : l10n.commonNormal,
                 tone: capWarn ? _Tone.warn : _Tone.good,
               ),
             ),
@@ -61,8 +63,8 @@ class StatusControls extends StatelessWidget {
             Expanded(
               child: _Badge(
                 icon: Icons.power_off,
-                label: '斷電',
-                value: cutOff ? '啟用' : '關閉',
+                label: l10n.commonCutOff,
+                value: cutOff ? l10n.statusBadgeCutOffOn : l10n.statusBadgeCutOffOff,
                 tone: cutOff ? _Tone.locked : _Tone.neutral,
               ),
             ),
@@ -78,7 +80,7 @@ class StatusControls extends StatelessWidget {
                 child: _CtrlButton(
                   variant: _BtnVariant.ghost,
                   icon: Icons.monitor_heart_outlined,
-                  label: '檢測電容',
+                  label: l10n.controlDetectCapacitor,
                   onPressed: online ? () => _detectCapacitor(context, tele) : null,
                 ),
               ),
@@ -89,7 +91,7 @@ class StatusControls extends StatelessWidget {
                 child: _CtrlButton(
                   variant: _BtnVariant.warn,
                   icon: Icons.power_settings_new,
-                  label: '解除斷電',
+                  label: l10n.commonReleaseCutOff,
                   onPressed: online ? () => _releaseCutOff(context, tele) : null,
                 ),
               ),
@@ -99,7 +101,7 @@ class StatusControls extends StatelessWidget {
                 child: _CtrlButton(
                   variant: _BtnVariant.ghost,
                   icon: Icons.shield_outlined,
-                  label: '防盜',
+                  label: l10n.commonAntiTheft,
                   onPressed: online ? () => _antiTheft(context, tele) : null,
                 ),
               ),
@@ -109,11 +111,7 @@ class StatusControls extends StatelessWidget {
 
         // ---- advisory note -------------------------------------------------
         const SizedBox(height: 11),
-        const _Note(
-          text:
-              '本機已偵測為「超級電容」，僅顯示支援的功能（防盜模式僅在支援的電池型號出現）。'
-              '解除斷電後建議勿再上鎖；電容本身過壓／低壓／過溫保護仍有效。',
-        ),
+        _Note(text: l10n.statusAdvisoryNote),
       ],
     );
   }
@@ -123,21 +121,28 @@ class StatusControls extends StatelessWidget {
   void _detectCapacitor(BuildContext context, TelemetryController tele) {
     // Read-only: surface the current SOH / capacity reading. No command is
     // sent — no capacitor self-check opcode is established by the protocol.
+    final l10n = AppLocalizations.of(context);
     final soh = tele.sohBucket;
     final svlt = tele.svlt;
     final msg = soh == null && svlt == null
-        ? '尚未取得電容讀數，請稍候即時資料更新。'
-        : 'SOH ${soh ?? '--'}%'
-            '${svlt != null ? ' · 次電壓 ${svlt.toStringAsFixed(2)} V' : ''}'
-            '${tele.pvlt != null ? ' · 主電壓 ${tele.pvlt!.toStringAsFixed(2)} V' : ''}';
+        ? l10n.capacitorCheckNoData
+        : l10n.capacitorCheckReadout(
+            soh?.toString() ?? '--',
+            svlt != null ? svlt.toStringAsFixed(2) : '--',
+            tele.pvlt != null ? tele.pvlt!.toStringAsFixed(2) : '--',
+          );
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(duration: const Duration(milliseconds: 1600), content: Text('電容檢測：$msg')),
+      SnackBar(
+        duration: const Duration(milliseconds: 1600),
+        content: Text(l10n.capacitorCheckSnack(msg)),
+      ),
     );
   }
 
   Future<void> _releaseCutOff(
       BuildContext context, TelemetryController tele) async {
     final conn = context.read<ConnectionController>();
+    final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final req = await showReleaseCutOffDialog(
       context,
@@ -148,17 +153,26 @@ class StatusControls extends StatelessWidget {
       if (req.skipAuth) {
         await conn.releaseCutOffModeOnly();
         messenger.showSnackBar(
-          const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已送出解除指令（實驗：未帶驗證）')),
+          SnackBar(
+            duration: const Duration(milliseconds: 1600),
+            content: Text(l10n.releaseSentNoAuthSnack),
+          ),
         );
       } else {
         await conn.releaseCutOff(cb: req.creds!.cb, pwSum: req.creds!.pwSum);
         messenger.showSnackBar(
-          const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已送出解除斷電指令')),
+          SnackBar(
+            duration: const Duration(milliseconds: 1600),
+            content: Text(l10n.releaseSentSnack),
+          ),
         );
       }
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(duration: const Duration(milliseconds: 1600), content: Text('解除失敗：$e')),
+        SnackBar(
+          duration: const Duration(milliseconds: 1600),
+          content: Text(l10n.releaseFailedSnack('$e')),
+        ),
       );
     }
   }
@@ -166,25 +180,26 @@ class StatusControls extends StatelessWidget {
   Future<void> _antiTheft(
       BuildContext context, TelemetryController tele) async {
     final conn = context.read<ConnectionController>();
+    final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     // Anti-theft is not a documented-safe path: require explicit confirmation
     // and the same per-device auth before sending a gated mode code.
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('啟用防盜模式'),
+        title: Text(l10n.antiTheftDialogTitle),
         content: Text(
-          '防盜模式尚未經完整驗證，僅在支援的型號顯示。確定要送出防盜指令嗎？',
+          l10n.antiTheftDialogBody,
           style: TextStyle(color: context.colors.muted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('繼續'),
+            child: Text(l10n.commonContinue),
           ),
         ],
       ),
@@ -204,24 +219,32 @@ class StatusControls extends StatelessWidget {
             cb: req.creds!.cb, pwSum: req.creds!.pwSum);
       }
       messenger.showSnackBar(
-        const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已送出防盜指令')),
+        SnackBar(
+          duration: const Duration(milliseconds: 1600),
+          content: Text(l10n.antiTheftSentSnack),
+        ),
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text('指令失敗：$e')));
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(milliseconds: 1600),
+          content: Text(l10n.antiTheftFailedSnack('$e')),
+        ),
+      );
     }
   }
 
   // ---- status interpretation ---------------------------------------------
 
-  static _RunStatus _runStatusOf(int? mode) {
+  static _RunStatus _runStatusOf(AppLocalizations l10n, int? mode) {
     if (mode == null) return const _RunStatus('--', _Tone.neutral);
     if ((mode & ReportedStatus.cutOffActive) != 0) {
-      return const _RunStatus('斷電', _Tone.locked);
+      return _RunStatus(l10n.commonCutOff, _Tone.locked);
     }
     if ((mode & ReportedStatus.antiTheftActive) != 0) {
-      return const _RunStatus('防盜', _Tone.good);
+      return _RunStatus(l10n.commonAntiTheft, _Tone.good);
     }
-    return const _RunStatus('正常', _Tone.good);
+    return _RunStatus(l10n.commonNormal, _Tone.good);
   }
 
   static bool _isCutOff(int? mode) =>
@@ -361,13 +384,19 @@ class _CtrlButton extends StatelessWidget {
             children: [
               Icon(icon, size: 15, color: fg),
               const SizedBox(width: 7),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                  color: fg,
+              // Flexible + ellipsis so 3 buttons never overflow on narrow
+              // screens / high text scale.
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                    color: fg,
+                  ),
                 ),
               ),
             ],

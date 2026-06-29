@@ -16,6 +16,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:open_rce_batt/l10n/app_localizations.dart';
 import '../../ble/ble.dart';
 import '../../models/models.dart';
 import '../../state/state.dart';
@@ -128,8 +129,12 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
   }
 
   void _showError() {
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(duration: Duration(milliseconds: 1600), content: Text('連線失敗，請再試一次')),
+      SnackBar(
+        duration: const Duration(milliseconds: 1600),
+        content: Text(l10n.devicesConnectFailed),
+      ),
     );
   }
 
@@ -150,6 +155,7 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
 
   /// Remove a saved device after confirmation (also disconnects if it's live).
   Future<void> _removeDevice(SavedDevice d) async {
+    final l10n = AppLocalizations.of(context);
     final devices = context.read<DeviceController>();
     final conn = context.read<ConnectionController>();
     final alias = d.alias.isEmpty ? d.id : d.alias;
@@ -157,17 +163,19 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: ctx.colors.panel,
-        title: Text('移除裝置', style: TextStyle(color: ctx.colors.text, fontSize: 16)),
-        content: Text('將「$alias」從已儲存清單移除？（不影響裝置本身）',
+        title: Text(l10n.devicesRemoveTitle,
+            style: TextStyle(color: ctx.colors.text, fontSize: 16)),
+        content: Text(l10n.devicesRemoveBody(alias),
             style: TextStyle(color: ctx.colors.muted, fontSize: 13)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('取消', style: TextStyle(color: ctx.colors.muted)),
+            child: Text(l10n.commonCancel, style: TextStyle(color: ctx.colors.muted)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('移除', style: TextStyle(color: AppColors.danger)),
+            child: Text(l10n.devicesRemove,
+                style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -184,6 +192,7 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final conn = context.watch<ConnectionController>();
     final devices = context.watch<DeviceController>();
 
@@ -242,18 +251,18 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
                 if (!conn.isAdapterOn) const _AdapterOffNote(),
 
                 // ---- saved devices --------------------------------------
-                const _SectionLabel(
+                _SectionLabel(
                   icon: Icons.bluetooth,
-                  text: '已儲存裝置',
+                  text: l10n.devicesSavedSection,
                 ),
                 if (saved.isEmpty)
-                  const _EmptyHint('尚無已儲存裝置')
+                  _EmptyHint(l10n.devicesNoSaved)
                 else
                   for (final d in saved)
                     _DeviceRow(
-                      alias: d.alias.isEmpty ? '未命名裝置' : d.alias,
+                      alias: d.alias.isEmpty ? l10n.devicesUnnamed : d.alias,
                       aliasMuted: false,
-                      meta: _savedMeta(d, rssiById[d.id]),
+                      meta: _savedMeta(d, rssiById[d.id], l10n),
                       signalLevel: rssiById.containsKey(d.id)
                           ? signalLevelFromRssi(rssiById[d.id]!)
                           : 0,
@@ -269,12 +278,12 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
                 _ScanSectionLabel(scanning: conn.isScanning),
                 if (nearby.isEmpty)
                   _EmptyHint(
-                    conn.isScanning ? '掃描中…' : '附近找不到裝置（確認電容已上電、藍牙開啟，並靠近一點）',
+                    conn.isScanning ? l10n.devicesScanning : l10n.devicesNearbyNotFound,
                   )
                 else
                   for (final r in nearby)
                     _DeviceRow(
-                      alias: r.name.isEmpty ? 'Unknown' : r.name,
+                      alias: r.name.isEmpty ? l10n.devicesUnknownName : r.name,
                       aliasMuted: true,
                       isVendor: r.isVendor,
                       meta: '${_shortId(r.id)} · RSSI ${r.rssi} dBm',
@@ -292,10 +301,10 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
                         setState(() => _showAllNearby = !_showAllNearby),
                     child: Text(
                       _showAllNearby
-                          ? '只顯示 RCE 裝置'
+                          ? l10n.devicesShowRceOnly
                           : (hiddenCount > 0
-                              ? '顯示全部 BLE 裝置（隱藏了 $hiddenCount 個非 RCE）'
-                              : '顯示全部 BLE 裝置'),
+                              ? l10n.devicesShowAllWithHidden(hiddenCount)
+                              : l10n.devicesShowAll),
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.amber),
                     ),
@@ -312,11 +321,23 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
 
 // ---- meta / formatting helpers ------------------------------------------
 
-String _savedMeta(SavedDevice d, int? rssi) {
+String _savedMeta(SavedDevice d, int? rssi, AppLocalizations l10n) {
   final parts = <String>[_shortId(d.id)];
   if (d.lastValue != null) parts.add('${d.lastValue!.toStringAsFixed(2)}V');
-  final t = _relativeTime(d.lastSeen);
-  if (t != null) parts.add(t == '剛剛' ? '剛剛' : '上次 $t');
+  final t = d.lastSeen;
+  if (t != null) {
+    final diff = DateTime.now().difference(t);
+    if (diff.inSeconds < 60) {
+      // "Just now" renders standalone (no "Last" prefix).
+      parts.add(l10n.relativeJustNow);
+    } else if (diff.inMinutes < 60) {
+      parts.add(l10n.devicesMetaLastSeen(l10n.relativeMinutesAgo(diff.inMinutes)));
+    } else if (diff.inHours < 24) {
+      parts.add(l10n.devicesMetaLastSeen(l10n.relativeHoursAgo(diff.inHours)));
+    } else {
+      parts.add(l10n.devicesMetaLastSeen(l10n.relativeDaysAgo(diff.inDays)));
+    }
+  }
   return parts.join(' · ');
 }
 
@@ -325,15 +346,6 @@ String _shortId(String id) {
   final s = id.replaceAll(':', '');
   if (s.length <= 9) return s;
   return '${s.substring(0, 4)}…${s.substring(s.length - 4)}';
-}
-
-String? _relativeTime(DateTime? t) {
-  if (t == null) return null;
-  final d = DateTime.now().difference(t);
-  if (d.inSeconds < 60) return '剛剛';
-  if (d.inMinutes < 60) return '${d.inMinutes} 分鐘前';
-  if (d.inHours < 24) return '${d.inHours} 小時前';
-  return '${d.inDays} 天前';
 }
 
 // ---- sub-widgets ---------------------------------------------------------
@@ -347,13 +359,14 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '選擇裝置',
+            l10n.devicesSheetTitle,
             style: TextStyle(
               fontSize: 16,
               letterSpacing: 0.5,
@@ -389,7 +402,7 @@ class _Header extends StatelessWidget {
                         size: 13, color: AppColors.amber),
                   const SizedBox(width: 6),
                   Text(
-                    scanning ? '掃描中…' : '重新掃描',
+                    scanning ? l10n.devicesScanning : l10n.devicesRescan,
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.amber,
@@ -435,6 +448,7 @@ class _ScanSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 14, 2, 9),
       child: Row(
@@ -443,9 +457,7 @@ class _ScanSectionLabel extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              scanning
-                  ? '附近掃描中…'
-                  : '附近裝置',
+              scanning ? l10n.devicesNearbyScanning : l10n.devicesNearby,
               style: _devsecStyle(context),
             ),
           ),
@@ -682,6 +694,7 @@ class _ConnectButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (connected) {
       return InkWell(
         onTap: onTap,
@@ -693,9 +706,9 @@ class _ConnectButton extends StatelessWidget {
             border: Border.all(color: AppColors.danger),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Text(
-            '中斷',
-            style: TextStyle(
+          child: Text(
+            l10n.devicesDisconnect,
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
@@ -723,9 +736,9 @@ class _ConnectButton extends StatelessWidget {
                   color: AppColors.onAmber,
                 ),
               )
-            : const Text(
-                '連線',
-                style: TextStyle(
+            : Text(
+                l10n.devicesConnect,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.5,
@@ -743,6 +756,7 @@ class _AdapterOffNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(10),
@@ -751,14 +765,14 @@ class _AdapterOffNote extends StatelessWidget {
         border: Border.all(color: const Color(0x47F6A821)),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, size: 15, color: AppColors.amber),
-          SizedBox(width: 8),
+          const Icon(Icons.warning_amber_rounded, size: 15, color: AppColors.amber),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '藍牙未開啟，請先開啟藍牙再掃描',
-              style: TextStyle(
+              l10n.devicesAdapterOff,
+              style: const TextStyle(
                   fontSize: 11, height: 1.5, color: AppColors.amber),
             ),
           ),

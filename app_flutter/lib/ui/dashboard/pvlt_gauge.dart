@@ -13,12 +13,17 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
 /// Animated amber-tick gauge for the primary voltage (PVLT).
+///
+/// The gauge's localized centre-stack strings ([pvltLabel], [sohText]) are
+/// resolved by the host (see [DashboardPage]/`_LiveDashboard`) and passed in,
+/// since the dial itself is drawn by a context-free [CustomPainter].
 class PvltGauge extends StatelessWidget {
   const PvltGauge({
     super.key,
     required this.pvlt,
     required this.fraction,
-    this.sohBucket,
+    required this.pvltLabel,
+    required this.sohText,
     this.size = 206,
   });
 
@@ -28,8 +33,12 @@ class PvltGauge extends StatelessWidget {
   /// Gauge fill fraction 0..1 across the 8.0–16.0 V display range.
   final double fraction;
 
-  /// SOH percentage bucket for the cyan sub-line, or null.
-  final int? sohBucket;
+  /// Localized "PVLT · Primary Voltage" caption (resolved in the host).
+  final String pvltLabel;
+
+  /// Localized SOH sub-line (e.g. "SOH 92% · Health Good" or "SOH --"),
+  /// resolved in the host where a [BuildContext] is available.
+  final String sohText;
 
   /// Dial diameter (mockup 206px).
   final double size;
@@ -54,7 +63,12 @@ class PvltGauge extends StatelessWidget {
               painter: _GaugePainter(value, colors),
             ),
           ),
-          _CenterReadout(pvlt: pvlt, sohBucket: sohBucket),
+          _CenterReadout(
+            pvlt: pvlt,
+            pvltLabel: pvltLabel,
+            sohText: sohText,
+            maxWidth: size * 0.66,
+          ),
         ],
       ),
     );
@@ -63,60 +77,76 @@ class PvltGauge extends StatelessWidget {
 
 /// Centre value stack (mockup `.ring .val`).
 class _CenterReadout extends StatelessWidget {
-  const _CenterReadout({required this.pvlt, required this.sohBucket});
+  const _CenterReadout({
+    required this.pvlt,
+    required this.pvltLabel,
+    required this.sohText,
+    required this.maxWidth,
+  });
 
   final double? pvlt;
-  final int? sohBucket;
+  final String pvltLabel;
+  final String sohText;
+
+  /// Inner-ring width the centre stack must stay within (so the value never
+  /// collides with the tick ring at large dial sizes / high text scale).
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
-    final soh = sohBucket;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Big value + amber unit (mockup `.num` / `.num .u`).
-        RichText(
-          text: TextSpan(
-            text: pvlt == null ? '--' : pvlt!.toStringAsFixed(2),
-            style: AppTextStyles.gaugeValue(context),
-            children: const [
-              TextSpan(
-                text: ' V',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.amber,
-                  fontWeight: FontWeight.w700,
-                ),
+    return SizedBox(
+      width: maxWidth,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Big value + amber unit (mockup `.num` / `.num .u`). FittedBox keeps
+          // it inside the ring regardless of text scale / value width.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: RichText(
+              text: TextSpan(
+                text: pvlt == null ? '--' : pvlt!.toStringAsFixed(2),
+                style: AppTextStyles.gaugeValue(context),
+                children: const [
+                  TextSpan(
+                    text: ' V',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.amber,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          'PVLT · 主電壓',
-          style: TextStyle(
-            fontSize: 10,
-            letterSpacing: 3,
-            color: context.colors.muted,
+          const SizedBox(height: 7),
+          Text(
+            pvltLabel,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 3,
+              color: context.colors.muted,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          soh == null ? 'SOH --' : 'SOH $soh% · 健康${_sohLabel(soh)}',
-          style: const TextStyle(
-            fontSize: 11,
-            letterSpacing: 1,
-            color: AppColors.cyan,
+          const SizedBox(height: 10),
+          Text(
+            sohText,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              letterSpacing: 1,
+              color: AppColors.cyan,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
-  }
-
-  static String _sohLabel(int soh) {
-    if (soh >= 80) return '良好';
-    if (soh >= 50) return '普通';
-    return '衰退';
   }
 }
 

@@ -10,6 +10,49 @@ import 'package:sqflite/sqflite.dart';
 import '../models/models.dart';
 import 'app_database.dart';
 
+/// One time-bucket of averaged/min/max telemetry for the trend chart.
+/// Produced DB-side by [HistoryRepo.queryBuckets] so large ranges never load
+/// every row into Dart.
+class HistoryBucket {
+  const HistoryBucket({
+    required this.at,
+    this.avgPvlt,
+    this.minPvlt,
+    this.maxPvlt,
+    this.avgTemp,
+    this.minTemp,
+    this.maxTemp,
+    required this.count,
+  });
+
+  final DateTime at; // bucket start
+  final double? avgPvlt, minPvlt, maxPvlt;
+  final double? avgTemp, minTemp, maxTemp; // temperature averaged across bucket
+  final int count;
+}
+
+/// Range-wide min/max/avg over RAW rows (not bucket-averaged), for the stats
+/// strip. Nulls when the range has no data for that metric.
+class HistoryStats {
+  const HistoryStats({
+    this.minPvlt,
+    this.maxPvlt,
+    this.avgPvlt,
+    this.minTemp,
+    this.maxTemp,
+    this.avgTemp,
+    this.firstAt,
+    required this.count,
+  });
+
+  final double? minPvlt, maxPvlt, avgPvlt;
+  final double? minTemp, maxTemp, avgTemp;
+  final DateTime? firstAt; // earliest row timestamp in range
+  final int count;
+
+  static const empty = HistoryStats(count: 0);
+}
+
 /// CRUD + CSV export over the `history` table.
 class HistoryRepo {
   HistoryRepo(this._db);
@@ -64,6 +107,70 @@ class HistoryRepo {
       limit: limit,
     );
     return rows.map(TelemetrySample.fromMap).toList(growable: false);
+  }
+
+  /// Bucketed trend for the chart: groups rows into [bucketMs]-wide buckets and
+  /// returns avg/min/max of pvlt + temperature per bucket (ascending by time).
+  /// [bucketMs] >= 60000 (one minute, the storage granularity).
+  Future<List<HistoryBucket>> queryBuckets({
+    DateTime? since,
+    required int bucketMs,
+  }) async {
+    final b = bucketMs < 60000 ? 60000 : bucketMs;
+    final where = since == null ? '' : 'WHERE timestamp >= ?';
+    final args = <Object?>[
+      if (since != null) since.millisecondsSinceEpoch,
+    ];
+    final rows = await _db.rawQuery(
+      'SELECT (timestamp / $b) * $b AS bucket, '
+      'AVG(pvlt) AS avgPvlt, MIN(pvlt) AS minPvlt, MAX(pvlt) AS maxPvlt, '
+      'AVG(temperature) AS avgTemp, MIN(temperature) AS minTemp, '
+      'MAX(temperature) AS maxTemp, COUNT(*) AS n '
+      'FROM ${Db.tableHistory} $where '
+      'GROUP BY timestamp / $b ORDER BY bucket ASC',
+      args,
+    );
+    double? d(Object? v) => (v as num?)?.toDouble();
+    return rows
+        .map((r) => HistoryBucket(
+              at: DateTime.fromMillisecondsSinceEpoch((r['bucket'] as num).toInt()),
+              avgPvlt: d(r['avgPvlt']),
+              minPvlt: d(r['minPvlt']),
+              maxPvlt: d(r['maxPvlt']),
+              avgTemp: d(r['avgTemp']),
+              minTemp: d(r['minTemp']),
+              maxTemp: d(r['maxTemp']),
+              count: (r['n'] as num?)?.toInt() ?? 0,
+            ))
+        .toList(growable: false);
+  }
+
+  /// Range-wide min/max/avg over raw rows (accurate stats, not bucket-averaged).
+  Future<HistoryStats> aggregate({DateTime? since}) async {
+    final where = since == null ? '' : 'WHERE timestamp >= ?';
+    final args = <Object?>[
+      if (since != null) since.millisecondsSinceEpoch,
+    ];
+    final r = await _db.rawQuery(
+      'SELECT MIN(pvlt) AS minP, MAX(pvlt) AS maxP, AVG(pvlt) AS avgP, '
+      'MIN(temperature) AS minT, MAX(temperature) AS maxT, AVG(temperature) AS avgT, '
+      'MIN(timestamp) AS firstTs, COUNT(*) AS n FROM ${Db.tableHistory} $where',
+      args,
+    );
+    final row = r.first;
+    double? d(Object? v) => (v as num?)?.toDouble();
+    final firstTs = (row['firstTs'] as num?)?.toInt();
+    return HistoryStats(
+      minPvlt: d(row['minP']),
+      maxPvlt: d(row['maxP']),
+      avgPvlt: d(row['avgP']),
+      minTemp: d(row['minT']),
+      maxTemp: d(row['maxT']),
+      avgTemp: d(row['avgT']),
+      firstAt:
+          firstTs == null ? null : DateTime.fromMillisecondsSinceEpoch(firstTs),
+      count: (row['n'] as num?)?.toInt() ?? 0,
+    );
   }
 
   /// Total stored sample count.
