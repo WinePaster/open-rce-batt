@@ -8,11 +8,11 @@ version = "0.1.0"
 description = "Community clean-room BLE client for the RCE iBatt smart battery"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "Open-RCE-Batt contributors" }]
 keywords = ["ble", "bluetooth", "battery", "ibatt", "rce", "right-to-repair"]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3",
     "Operating System :: POSIX :: Linux",
     "Topic :: Communications",

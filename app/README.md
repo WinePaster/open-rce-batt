@@ -1,6 +1,6 @@
 # open-rce-batt
 
-An independent, open-source (**MIT**) BLE client for the **RCE iBatt** smart
+An independent, open-source (**GPLv3**) BLE client for the **RCE iBatt** smart
 battery, written in Python with [`bleak`](https://github.com/hbldh/bleak) so it
 runs cross-platform (developed/tested target: **Linux** with a BLE adapter).
 
@@ -116,5 +116,5 @@ asyncio.run(main())
 
 ## License
 
-MIT. See the `license` field in `pyproject.toml`. This software is provided for
+GPLv3. See the `license` field in `pyproject.toml`. This software is provided for
 interoperability and right-to-repair purposes, without warranty.

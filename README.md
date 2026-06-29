@@ -59,6 +59,10 @@ open-rce-batt/
 - 解除斷電／鎖定後**請勿重新上鎖**；電容本身的過壓／低壓／過溫保護仍持續有效。
 - 本軟體不提供任何擔保，詳見 [`LICENSE`](./LICENSE)。
 
+## 授權
+
+本專案程式碼採 **GNU GPLv3**（見 [`LICENSE`](./LICENSE)）。散布衍生版或改裝 APK 時**必須一併以 GPLv3 開源**——確保這個社群自救工具永遠對社群開放、不會被閉源或商業化關起來。協定文件（`docs/`）為功能性事實、不受著作權限制。
+
 ## 協定文件
 
 完整規格見 [`docs/PROTOCOL.md`](./docs/PROTOCOL.md)，實機驗證見 [`docs/CAPTURE_VERIFIED.md`](./docs/CAPTURE_VERIFIED.md)。

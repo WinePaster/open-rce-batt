@@ -95,4 +95,14 @@ This reasoning is based on the user's assessment of the Taiwan-law context and *
 
 ---
 
+## 授權 / License
+
+本專案**程式碼**採 **GNU GPLv3**（見 [`LICENSE`](./LICENSE)）——著佐權確保散布衍生版／改裝 APK 時必須一併開源。`docs/` 內的**通訊協定事實／資料格式不受著作權保護**，不在 GPLv3 限制範圍。
+
+The project **code** is licensed under **GNU GPLv3** (see [`LICENSE`](./LICENSE)) — copyleft ensures
+derivatives / modified APKs stay open. The **protocol facts / data formats** in `docs/` are not
+copyrightable and are not restricted by the GPLv3.
+
+---
+
 *See also: [`README.md`](./README.md), [`CLEANROOM.md`](./CLEANROOM.md), [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`LICENSE`](./LICENSE).*

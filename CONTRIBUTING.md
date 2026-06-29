@@ -69,7 +69,7 @@ Signed-off-by: Your Name <you@example.com>
 
 ## 行為與授權 / Conduct and license
 
-- 貢獻即表示你同意你的貢獻以本專案的 [`LICENSE`](./LICENSE)（MIT）授權。
+- 貢獻即表示你同意你的貢獻以本專案的 [`LICENSE`](./LICENSE)（GPLv3）授權。
 - 請閱讀 [`COPYRIGHT.md`](./COPYRIGHT.md) 以了解專案的法律立場。
 
-> By contributing you agree your contribution is licensed under the project's [`LICENSE`](./LICENSE) (MIT). Please read [`COPYRIGHT.md`](./COPYRIGHT.md) for the project's legal position.
+> By contributing you agree your contribution is licensed under the project's [`LICENSE`](./LICENSE) (GPLv3). Please read [`COPYRIGHT.md`](./COPYRIGHT.md) for the project's legal position.

@@ -86,6 +86,14 @@ are written **only** from `docs/`, never touching the original app.
   over-/under-voltage and over-temperature protections remain active.
 - The software comes with no warranty; see [`LICENSE`](./LICENSE).
 
+## License
+
+The code is licensed under **GNU GPLv3** (see [`LICENSE`](./LICENSE)). Distributing a
+derivative or a modified APK requires releasing it under GPLv3 too — keeping this
+community self-help tool open for the community and preventing it from being
+re-closed or commercialized. The protocol docs (`docs/`) are functional facts, not
+subject to copyright.
+
 ## Protocol documentation
 
 Full spec: [`docs/PROTOCOL.md`](./docs/PROTOCOL.md); live verification:
