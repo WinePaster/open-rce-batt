@@ -95,7 +95,7 @@ jobs:
           echo "APK=$OUT" >> "$GITHUB_ENV"
 
       - name: 發佈 GitHub Release（含 APK）
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.ver.outputs.TAG }}
           name: Open-RCE-Batt ${{ steps.ver.outputs.TAG }}
