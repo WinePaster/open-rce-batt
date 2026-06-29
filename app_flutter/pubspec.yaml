@@ -48,14 +48,14 @@ dependencies:
   # i18n / formatting
   intl: ^0.20.0
   # CSV / .log export + share sheet
-  share_plus: ^10.0.0
+  share_plus: ^13.2.0
   csv: ^6.0.0
   # open external links (GitHub / docs)
   url_launcher: ^6.3.0
   # keep the screen awake while connected (monitoring while riding)
-  wakelock_plus: ^1.2.0
+  wakelock_plus: ^1.6.1
   # read the real APK version for the About screen (single source of truth)
-  package_info_plus: ^8.0.0
+  package_info_plus: ^10.2.0
   # GitHub release update check
   http: ^1.2.0
 
