@@ -1,4 +1,4 @@
-package com.openrcebatt.open_rce_batt
+package com.winepaster.open_rce_batt
 
 import io.flutter.embedding.android.FlutterActivity
 
