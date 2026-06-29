@@ -149,7 +149,7 @@ class _DataCardState extends State<_DataCard> {
     try {
       final csv = await tele.exportHistoryCsv();
       if (!csv.contains('\n')) {
-        messenger.showSnackBar(const SnackBar(content: Text('沒有可匯出的紀錄')));
+        messenger.showSnackBar(const SnackBar(duration: Duration(milliseconds: 1600), content: Text('沒有可匯出的紀錄')));
         return;
       }
       await shareTextAsFile(
@@ -159,7 +159,7 @@ class _DataCardState extends State<_DataCard> {
         subject: 'Open-RCE-Batt 全部資料',
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('匯出失敗：$e')));
+      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text('匯出失敗：$e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -177,7 +177,7 @@ class _DataCardState extends State<_DataCard> {
     );
     if (!ok) return;
     await tele.clearHistory();
-    messenger.showSnackBar(const SnackBar(content: Text('已清除歷史紀錄')));
+    messenger.showSnackBar(const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已清除歷史紀錄')));
   }
 
   @override
@@ -233,7 +233,7 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
     try {
       final log = await tele.exportLog();
       if (log.trim().isEmpty) {
-        messenger.showSnackBar(const SnackBar(content: Text('診斷日誌為空')));
+        messenger.showSnackBar(const SnackBar(duration: Duration(milliseconds: 1600), content: Text('診斷日誌為空')));
         return;
       }
       await shareTextAsFile(
@@ -243,7 +243,7 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
         subject: 'Open-RCE-Batt 診斷日誌',
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('匯出失敗：$e')));
+      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text('匯出失敗：$e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -261,7 +261,7 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
     );
     if (!ok) return;
     await tele.clearLog();
-    messenger.showSnackBar(const SnackBar(content: Text('已清除診斷日誌')));
+    messenger.showSnackBar(const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已清除診斷日誌')));
   }
 
   @override
@@ -330,7 +330,7 @@ class _AboutCard extends StatelessWidget {
     if (!opened) {
       await Clipboard.setData(ClipboardData(text: url));
       messenger.showSnackBar(
-          SnackBar(content: Text('無法開啟瀏覽器，已複製連結：$url')));
+          SnackBar(duration: const Duration(milliseconds: 1600), content: Text('無法開啟瀏覽器，已複製連結：$url')));
     }
   }
 
@@ -416,14 +416,6 @@ void _showAbout(BuildContext context) {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () async {
-            await Clipboard.setData(const ClipboardData(text: kGithubUrl));
-            if (ctx.mounted) Navigator.of(ctx).pop();
-          },
-          child: const Text('複製 GitHub 連結',
-              style: TextStyle(color: AppColors.cyan)),
-        ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
           child: const Text('關閉', style: TextStyle(color: AppColors.amber)),

@@ -131,7 +131,7 @@ class StatusControls extends StatelessWidget {
             '${svlt != null ? ' · 次電壓 ${svlt.toStringAsFixed(2)} V' : ''}'
             '${tele.pvlt != null ? ' · 主電壓 ${tele.pvlt!.toStringAsFixed(2)} V' : ''}';
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('電容檢測：$msg')),
+      SnackBar(duration: const Duration(milliseconds: 1600), content: Text('電容檢測：$msg')),
     );
   }
 
@@ -148,17 +148,17 @@ class StatusControls extends StatelessWidget {
       if (req.skipAuth) {
         await conn.releaseCutOffModeOnly();
         messenger.showSnackBar(
-          const SnackBar(content: Text('已送出解除指令（實驗：未帶驗證）')),
+          const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已送出解除指令（實驗：未帶驗證）')),
         );
       } else {
         await conn.releaseCutOff(cb: req.creds!.cb, pwSum: req.creds!.pwSum);
         messenger.showSnackBar(
-          const SnackBar(content: Text('已送出解除斷電指令')),
+          const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已送出解除斷電指令')),
         );
       }
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('解除失敗：$e')),
+        SnackBar(duration: const Duration(milliseconds: 1600), content: Text('解除失敗：$e')),
       );
     }
   }
@@ -204,10 +204,10 @@ class StatusControls extends StatelessWidget {
             cb: req.creds!.cb, pwSum: req.creds!.pwSum);
       }
       messenger.showSnackBar(
-        const SnackBar(content: Text('已送出防盜指令')),
+        const SnackBar(duration: Duration(milliseconds: 1600), content: Text('已送出防盜指令')),
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('指令失敗：$e')));
+      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text('指令失敗：$e')));
     }
   }
 

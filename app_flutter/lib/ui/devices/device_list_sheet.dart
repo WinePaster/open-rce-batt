@@ -125,7 +125,7 @@ class _DeviceListSheetState extends State<DeviceListSheet> {
 
   void _showError() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('連線失敗，請再試一次')),
+      const SnackBar(duration: Duration(milliseconds: 1600), content: Text('連線失敗，請再試一次')),
     );
   }
 

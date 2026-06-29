@@ -82,7 +82,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final csv = await _tele.exportHistoryCsv(since: since, limit: _rowCap);
       if (csv.trim().isEmpty || !csv.contains('\n')) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('沒有可匯出的紀錄')),
+          const SnackBar(duration: Duration(milliseconds: 1600), content: Text('沒有可匯出的紀錄')),
         );
         return;
       }
@@ -93,7 +93,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         subject: 'Open-RCE-Batt 歷史紀錄',
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('匯出失敗：$e')));
+      messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text('匯出失敗：$e')));
     } finally {
       if (mounted) setState(() => _exporting = false);
     }

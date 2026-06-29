@@ -26,36 +26,40 @@ class DisconnectedState extends StatelessWidget {
     final conn = context.watch<ConnectionController>();
     final devices = conn.savedDevices;
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 50, 24, 30),
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 30),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const _PulseIcon(),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
             const Text(
               '尚未連線裝置',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 23,
                 letterSpacing: 0.5,
                 fontWeight: FontWeight.w700,
                 color: AppColors.text,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 240),
+              constraints: const BoxConstraints(maxWidth: 280),
               child: const Text(
                 '選擇已儲存的裝置快速重連，或掃描附近的 RCE 電容。',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 14.5,
                   height: 1.7,
                   color: AppColors.muted,
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 26),
 
             if (devices.isNotEmpty) ...[
               const Align(
@@ -98,6 +102,8 @@ class DisconnectedState extends StatelessWidget {
               ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

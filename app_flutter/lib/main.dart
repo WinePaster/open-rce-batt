@@ -516,7 +516,7 @@ class _GitHubButton extends StatelessWidget {
           if (!opened) {
             await Clipboard.setData(const ClipboardData(text: kProjectUrl));
             messenger.showSnackBar(
-              const SnackBar(content: Text('無法開啟瀏覽器，已複製連結：$kProjectUrl')),
+              const SnackBar(duration: Duration(milliseconds: 1600), content: Text('無法開啟瀏覽器，已複製連結：$kProjectUrl')),
             );
           }
         },
