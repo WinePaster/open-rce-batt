@@ -15,6 +15,7 @@ import 'ui/dashboard/dashboard_page.dart';
 import 'ui/devices/device_list_sheet.dart';
 import 'ui/history/history_screen.dart';
 import 'ui/settings/settings_screen.dart';
+import 'ui/util/update_check.dart';
 
 /// Public project page (shown in the community disclaimer + Settings → About).
 const String kProjectUrl = 'https://github.com/WinePaster/open-rce-batt';
@@ -140,8 +141,17 @@ class _RootShellState extends State<RootShell> {
   @override
   void initState() {
     super.initState();
-    // After first frame, gate the UI behind the community disclaimer (once).
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowDisclaimer());
+    // After first frame: disclaimer (once) then a silent GitHub update check.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startup());
+  }
+
+  Future<void> _startup() async {
+    await _maybeShowDisclaimer();
+    if (!mounted) return;
+    // On-launch update check only on mobile (skips unit tests on the host).
+    if (Platform.isAndroid || Platform.isIOS) {
+      await runUpdateCheck(context, manual: false);
+    }
   }
 
   Future<void> _maybeShowDisclaimer() async {

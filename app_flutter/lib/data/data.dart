@@ -18,3 +18,4 @@ export 'history_repo.dart';
 export 'device_repo.dart';
 export 'settings_repo.dart';
 export 'log_repo.dart';
+export 'update_service.dart';

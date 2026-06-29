@@ -16,6 +16,7 @@ import '../../models/models.dart';
 import '../../state/state.dart';
 import '../../theme/app_theme.dart';
 import '../util/export_share.dart';
+import '../util/update_check.dart';
 import '../widgets/industrial.dart';
 
 
@@ -369,6 +370,11 @@ class _AboutCard extends StatelessWidget {
                 );
               },
             ),
+          ),
+          SettingsLinkRow(
+            icon: Icons.system_update_alt,
+            label: '檢查更新',
+            onTap: () => runUpdateCheck(context, manual: true),
           ),
           SettingsLinkRow(
             icon: Icons.code,

@@ -56,6 +56,8 @@ dependencies:
   wakelock_plus: ^1.2.0
   # read the real APK version for the About screen (single source of truth)
   package_info_plus: ^8.0.0
+  # GitHub release update check
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
