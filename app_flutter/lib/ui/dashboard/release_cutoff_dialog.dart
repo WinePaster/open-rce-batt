@@ -16,21 +16,38 @@ import 'package:flutter/material.dart';
 import '../../protocol/protocol.dart';
 import '../../theme/app_theme.dart';
 
-/// Prompt for the dealer code + cut-off password, returning the derived
-/// [AuthCredentials] on confirm, or null on cancel/dismiss.
+/// Result of the release dialog.
 ///
-/// [initialDealerCode] pre-fills the dealer-code field from live telemetry
-/// (selector 0x27) when available.
-Future<AuthCredentials?> showReleaseCutOffDialog(
+/// Exactly one path is requested:
+///   * [creds] != null  → send mode + auth (normal / "use my code").
+///   * [skipAuth] true   → EXPERIMENTAL: send the mode sub-frame ONLY.
+class ReleaseRequest {
+  const ReleaseRequest({this.creds, this.skipAuth = false});
+
+  /// Derived auth credentials, or null when [skipAuth].
+  final AuthCredentials? creds;
+
+  /// Send the mode-only frame, skipping auth entirely (unproven fallback).
+  final bool skipAuth;
+}
+
+/// Collects how to release: a cut-off password, directly-entered cb/pwSum
+/// ("use my code"), or an experimental skip-auth. Returns a [ReleaseRequest]
+/// on confirm, or null on cancel/dismiss.
+///
+/// [initialDealerCode] pre-fills from live telemetry (selector 0x27).
+Future<ReleaseRequest?> showReleaseCutOffDialog(
   BuildContext context, {
   String? initialDealerCode,
 }) {
-  return showDialog<AuthCredentials>(
+  return showDialog<ReleaseRequest>(
     context: context,
     barrierColor: const Color(0xD904060A), // mockup rgba(4,6,10,.85)
     builder: (_) => _ReleaseDialog(initialDealerCode: initialDealerCode ?? ''),
   );
 }
+
+enum _AuthMode { password, code }
 
 class _ReleaseDialog extends StatefulWidget {
   const _ReleaseDialog({required this.initialDealerCode});
@@ -45,22 +62,66 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
   late final TextEditingController _dealer =
       TextEditingController(text: widget.initialDealerCode);
   final TextEditingController _password = TextEditingController();
+  // "use my code" advanced direct-entry of the two 16-bit auth values.
+  late final TextEditingController _cb =
+      TextEditingController(text: _prefillCb(widget.initialDealerCode));
+  final TextEditingController _pwsum = TextEditingController();
+
+  _AuthMode _mode = _AuthMode.password;
+  bool _skipAuth = false;
+  String? _error;
+
+  /// Best-effort cb hint from the dealer code's leading 4 digits
+  /// (e.g. dealer "01680217" → "168"). User can edit.
+  static String _prefillCb(String dealer) {
+    final d = dealer.trim();
+    if (d.length < 4) return '';
+    final n = int.tryParse(d.substring(0, 4));
+    return n?.toString() ?? '';
+  }
 
   @override
   void dispose() {
     _dealer.dispose();
     _password.dispose();
+    _cb.dispose();
+    _pwsum.dispose();
     super.dispose();
   }
 
-  bool get _canSubmit =>
-      _dealer.text.trim().isNotEmpty && _password.text.isNotEmpty;
+  bool get _canSubmit {
+    if (_skipAuth) return true;
+    if (_mode == _AuthMode.password) {
+      return _dealer.text.trim().length >= 8 && _password.text.isNotEmpty;
+    }
+    return _cb.text.trim().isNotEmpty && _pwsum.text.trim().isNotEmpty;
+  }
 
   void _submit() {
     if (!_canSubmit) return;
-    final cb = CommandBuilder.cbFromFieldCb(_dealer.text.trim());
-    final pwSum = CommandBuilder.passwordChecksum(_password.text);
-    Navigator.of(context).pop(AuthCredentials(cb: cb, pwSum: pwSum));
+    if (_skipAuth) {
+      Navigator.of(context).pop(const ReleaseRequest(skipAuth: true));
+      return;
+    }
+    try {
+      final AuthCredentials creds;
+      if (_mode == _AuthMode.password) {
+        creds = AuthCredentials(
+          cb: CommandBuilder.cbFromFieldCb(_dealer.text.trim()),
+          pwSum: CommandBuilder.passwordChecksum(_password.text),
+        );
+      } else {
+        creds = AuthCredentials(
+          cb: CommandBuilder.parseAuthValue(_cb.text),
+          pwSum: CommandBuilder.parseAuthValue(_pwsum.text),
+        );
+      }
+      Navigator.of(context).pop(ReleaseRequest(creds: creds));
+    } on FormatException {
+      setState(() => _error = '驗證值格式錯誤（用十進位或 0x 十六進位）');
+    } catch (_) {
+      setState(() => _error = '代理碼需至少 8 碼');
+    }
   }
 
   @override
@@ -85,43 +146,120 @@ class _ReleaseDialogState extends State<_ReleaseDialog> {
               ),
               const SizedBox(height: 5),
               const Text(
-                '輸入斷電密碼以解除。系統將以記錄到的代理碼推導驗證值，並送出唯一已知安全的「解除」指令。',
+                '送出已知安全的「解除」指令(mode 0x06)。可用斷電密碼，或直接輸入你的驗證值。',
                 style: TextStyle(
                   fontSize: 11.5,
                   height: 1.6,
                   color: AppColors.muted,
                 ),
               ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: _dealer,
-                style: const TextStyle(fontSize: 14, color: AppColors.text),
-                cursorColor: AppColors.amber,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: '代理碼 (Dealer code)',
-                  isDense: true,
-                  contentPadding: EdgeInsets.all(12),
+              const SizedBox(height: 14),
+              // mode segmented control (disabled when skipping auth)
+              Opacity(
+                opacity: _skipAuth ? 0.4 : 1,
+                child: SegmentedButton<_AuthMode>(
+                  segments: const [
+                    ButtonSegment(value: _AuthMode.password, label: Text('密碼')),
+                    ButtonSegment(value: _AuthMode.code, label: Text('進階：我的碼')),
+                  ],
+                  selected: {_mode},
+                  onSelectionChanged: _skipAuth
+                      ? null
+                      : (s) => setState(() {
+                            _mode = s.first;
+                            _error = null;
+                          }),
                 ),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _password,
-                style: const TextStyle(fontSize: 14, color: AppColors.text),
-                cursorColor: AppColors.amber,
-                obscureText: true,
-                onChanged: (_) => setState(() {}),
-                onSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
-                  labelText: '斷電密碼',
-                  isDense: true,
-                  contentPadding: EdgeInsets.all(12),
+              const SizedBox(height: 12),
+              if (!_skipAuth && _mode == _AuthMode.password) ...[
+                TextField(
+                  controller: _dealer,
+                  style: const TextStyle(fontSize: 14, color: AppColors.text),
+                  cursorColor: AppColors.amber,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: '代理碼 (Dealer code, 連線時自動帶入)',
+                    isDense: true,
+                    contentPadding: EdgeInsets.all(12),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _password,
+                  style: const TextStyle(fontSize: 14, color: AppColors.text),
+                  cursorColor: AppColors.amber,
+                  obscureText: true,
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => _submit(),
+                  decoration: const InputDecoration(
+                    labelText: '斷電密碼',
+                    isDense: true,
+                    contentPadding: EdgeInsets.all(12),
+                  ),
+                ),
+              ],
+              if (!_skipAuth && _mode == _AuthMode.code) ...[
+                TextField(
+                  controller: _cb,
+                  style: const TextStyle(fontSize: 14, color: AppColors.text),
+                  cursorColor: AppColors.amber,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'cb (代理碼數值, 例 168 或 0xA8)',
+                    isDense: true,
+                    contentPadding: EdgeInsets.all(12),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _pwsum,
+                  style: const TextStyle(fontSize: 14, color: AppColors.text),
+                  cursorColor: AppColors.amber,
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => _submit(),
+                  decoration: const InputDecoration(
+                    labelText: 'pwSum (密碼校驗值, 例 204 或 0xCC)',
+                    isDense: true,
+                    contentPadding: EdgeInsets.all(12),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              // experimental skip-auth toggle
+              InkWell(
+                onTap: () => setState(() {
+                  _skipAuth = !_skipAuth;
+                  _error = null;
+                }),
+                borderRadius: BorderRadius.circular(8),
+                child: Row(
+                  children: [
+                    Switch(
+                      value: _skipAuth,
+                      onChanged: (v) => setState(() {
+                        _skipAuth = v;
+                        _error = null;
+                      }),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        '實驗：只送 mode、跳過驗證（未證實，備案）',
+                        style: TextStyle(fontSize: 11.5, color: AppColors.muted),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              if (_error != null) ...[
+                const SizedBox(height: 6),
+                Text(_error!,
+                    style: const TextStyle(fontSize: 11, color: AppColors.danger)),
+              ],
               const SizedBox(height: 14),
               const _WarnBox(
-                text: '解除斷電後請勿重新上鎖；電容本身過壓／低壓／過溫保護仍持續有效。',
+                text: '解除後請勿重新上鎖；電容本身過壓／低壓／過溫保護仍持續有效。',
               ),
               const SizedBox(height: 16),
               Row(

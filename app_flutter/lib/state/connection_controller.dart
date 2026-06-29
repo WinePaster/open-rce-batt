@@ -171,6 +171,15 @@ class ConnectionController extends ChangeNotifier {
           {required int cb, required int pwSum}) =>
       _ble.switchMode(mode, cb: cb, pwSum: pwSum);
 
+  /// EXPERIMENTAL — send ONLY the mode sub-frame, skipping the auth frame.
+  /// Unproven: the device MAY ignore commands without auth. Provided as a
+  /// car-side fallback to test whether auth is actually required.
+  Future<void> switchModeOnly(int mode) =>
+      writeCommand(const CommandBuilder().modeSet(mode));
+
+  /// EXPERIMENTAL release with no auth (mode 0x06 only). See [switchModeOnly].
+  Future<void> releaseCutOffModeOnly() => switchModeOnly(ModeArg.release);
+
   /// Standalone verify-auth (9-byte auth frame).
   Future<void> sendAuth({required int cb, required int pwSum}) =>
       _ble.sendAuth(cb: cb, pwSum: pwSum);

@@ -185,3 +185,11 @@ ABSENT this session (formulas NOT validated): 0x96 capacity/SOH, 0x24 DVOL, 0x25
 - pwsum=0x00⟨PW⟩ (⟨PW⟩) password preimage — non-injective char-code sum, unknown and not needed for replay
 - Portability of auth to other devices requires that device's own cb (its 0x27 dealer code) and pwsum
 - Post-unlock current behaviour unknown (all five 0x2E samples are pre-unlock, all 0 A)
+
+---
+
+## 9. 監看 / 產品脈絡（2026-06 補註）
+
+- **遙測串流不需認證。** 本次擷取中遙測在 `t=0` 即流動，auth 與 `switchMode 0x06` 分別在 +26s／+28s。亦即只要「連線 → 訂閱 07b9ace4(寫 CCCD 0100) → 送 `#`(0x23) 保活」即可取得電壓／溫度／SOH，**不需任何密碼**。健康的純超級電容用此 App 監看即可，毋須解鎖。
+- **mode 0x06 ≠ 鎖存解鎖。** 連線後送的 `0x06+auth` 較像例行 detect 握手（mode 暫存器只短暫顯示 0x06 又回 0x05）。
+- **「斷電／防盜」屬電池型功能；電容的「異常鎖定保護」解除尚未實作**（需故障單位擷取，見 `UNVERIFIED.md`）。

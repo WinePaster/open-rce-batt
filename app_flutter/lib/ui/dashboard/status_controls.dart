@@ -139,16 +139,23 @@ class StatusControls extends StatelessWidget {
       BuildContext context, TelemetryController tele) async {
     final conn = context.read<ConnectionController>();
     final messenger = ScaffoldMessenger.of(context);
-    final creds = await showReleaseCutOffDialog(
+    final req = await showReleaseCutOffDialog(
       context,
       initialDealerCode: tele.dealerCode,
     );
-    if (creds == null) return;
+    if (req == null) return;
     try {
-      await conn.releaseCutOff(cb: creds.cb, pwSum: creds.pwSum);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('已送出解除斷電指令')),
-      );
+      if (req.skipAuth) {
+        await conn.releaseCutOffModeOnly();
+        messenger.showSnackBar(
+          const SnackBar(content: Text('已送出解除指令（實驗：未帶驗證）')),
+        );
+      } else {
+        await conn.releaseCutOff(cb: req.creds!.cb, pwSum: req.creds!.pwSum);
+        messenger.showSnackBar(
+          const SnackBar(content: Text('已送出解除斷電指令')),
+        );
+      }
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(content: Text('解除失敗：$e')),
@@ -184,13 +191,18 @@ class StatusControls extends StatelessWidget {
     );
     if (confirmed != true) return;
     if (!context.mounted) return;
-    final creds = await showReleaseCutOffDialog(
+    final req = await showReleaseCutOffDialog(
       context,
       initialDealerCode: tele.dealerCode,
     );
-    if (creds == null) return;
+    if (req == null) return;
     try {
-      await conn.switchMode(ModeArg.antiTheft, cb: creds.cb, pwSum: creds.pwSum);
+      if (req.skipAuth) {
+        await conn.switchModeOnly(ModeArg.antiTheft);
+      } else {
+        await conn.switchMode(ModeArg.antiTheft,
+            cb: req.creds!.cb, pwSum: req.creds!.pwSum);
+      }
       messenger.showSnackBar(
         const SnackBar(content: Text('已送出防盜指令')),
       );

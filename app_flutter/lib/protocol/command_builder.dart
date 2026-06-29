@@ -69,6 +69,19 @@ class CommandBuilder {
     return int.parse(fieldCb.substring(0, 8));
   }
 
+  /// Parse a user-entered 16-bit auth value (cb or pwSum) in the "use my code"
+  /// advanced path. Accepts decimal ("204") or hex ("0xCC" / "0XCC"). Returns a
+  /// value masked to 16 bits. Throws [FormatException] on garbage.
+  static int parseAuthValue(String input) {
+    final s = input.trim();
+    if (s.isEmpty) throw const FormatException('empty');
+    final v = (s.toLowerCase().startsWith('0x'))
+        ? int.parse(s.substring(2), radix: 16)
+        : int.parse(s);
+    if (v < 0) throw const FormatException('negative');
+    return v & 0xFFFF;
+  }
+
   /// Keep-alive: the single byte 0x23 ('#'). Not a framed command.
   Uint8List keepAlive() => Uint8List.fromList(const [kKeepAliveByte]);
 
