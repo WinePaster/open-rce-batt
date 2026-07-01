@@ -106,7 +106,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.ver.outputs.TAG }}
-          name: Open-RCE-Batt ${{ steps.ver.outputs.TAG }}
+          name: OpenSmartBatt ${{ steps.ver.outputs.TAG }}
           prerelease: ${{ steps.ver.outputs.PRERELEASE }}
           generate_release_notes: true
           body: |
