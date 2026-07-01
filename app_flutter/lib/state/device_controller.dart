@@ -1,4 +1,4 @@
-/// Open-RCE-Batt — saved-device controller (mockup screen 3).
+/// OpenSmartBatt — saved-device controller (mockup screen 3).
 ///
 /// Owns the list of user-remembered batteries + their editable aliases for the
 /// quick-reconnect flow. Backed by [DeviceRepo]; the BLE id is the stable key.
@@ -61,12 +61,14 @@ class DeviceController extends ChangeNotifier {
   Future<void> saveNew(
     String id,
     String alias, {
+    String name = '',
     DateTime? lastSeen,
     double? lastValue,
   }) {
     return save(SavedDevice(
       id: id,
       alias: alias,
+      name: name,
       lastSeen: lastSeen ?? DateTime.now(),
       lastValue: lastValue,
     ));

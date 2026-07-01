@@ -1,4 +1,4 @@
-/// Open-RCE-Batt — protection status + mode controls (mockup 防護狀態 / 模式).
+/// OpenSmartBatt — protection status + mode controls (mockup 防護狀態 / 模式).
 ///
 /// Three status badges (run-mode / capacitor-health / cut-off) over a row of
 /// capability-gated action buttons:
@@ -15,7 +15,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:open_rce_batt/l10n/app_localizations.dart';
+import 'package:open_smart_batt/l10n/app_localizations.dart';
 import '../../protocol/protocol.dart';
 import '../../state/state.dart';
 import '../../theme/app_theme.dart';

@@ -1,4 +1,4 @@
-/// Open-RCE-Batt — dashboard screen (mockup page `#page-dash`).
+/// OpenSmartBatt — dashboard screen (mockup page `#page-dash`).
 ///
 /// Live view: PVLT instrument gauge, the four-up readout grid, the DVOL per-cell
 /// bars and the protection-status / mode-controls card. When no device is
@@ -8,7 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:open_rce_batt/l10n/app_localizations.dart';
+import 'package:open_smart_batt/l10n/app_localizations.dart';
 import '../../state/state.dart';
 import '../../theme/app_theme.dart';
 import '../devices/device_list_sheet.dart';

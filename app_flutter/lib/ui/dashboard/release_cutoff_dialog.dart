@@ -1,4 +1,4 @@
-/// Open-RCE-Batt — release cut-off auth dialog (mockup 解除斷電 flow).
+/// OpenSmartBatt — release cut-off auth dialog (mockup 解除斷電 flow).
 ///
 /// The documented-safe action is `switchMode(release=0x06)` paired with an auth
 /// frame built from per-device runtime inputs: a `cb` derived from the dealer
@@ -13,7 +13,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:open_rce_batt/l10n/app_localizations.dart';
+import 'package:open_smart_batt/l10n/app_localizations.dart';
 import '../../protocol/protocol.dart';
 import '../../theme/app_theme.dart';
 

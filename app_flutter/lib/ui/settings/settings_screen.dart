@@ -1,4 +1,4 @@
-/// Open-RCE-Batt — Settings screen (mockup screen 5).
+/// OpenSmartBatt — Settings screen (mockup screen 5).
 ///
 /// Five cards: 連線 (connection), 顯示 (display), 資料 (data), 診斷/開發者
 /// (diagnostics — raw BLE packet log DEFAULT OFF + export `.log`), and 關於
@@ -12,7 +12,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:open_rce_batt/l10n/app_localizations.dart';
+import 'package:open_smart_batt/l10n/app_localizations.dart';
 import '../../models/models.dart';
 import '../../state/state.dart';
 import '../../theme/app_theme.dart';
@@ -22,9 +22,9 @@ import '../widgets/industrial.dart';
 
 
 /// Community project links (mockup startup disclaimer + About card).
-const String kGithubUrl = 'https://github.com/WinePaster/open-rce-batt';
+const String kGithubUrl = 'https://github.com/WinePaster/open-smart-batt';
 const String kProtocolUrl =
-    'https://github.com/WinePaster/open-rce-batt/blob/main/docs/PROTOCOL.md';
+    'https://github.com/WinePaster/open-smart-batt/blob/main/docs/PROTOCOL.md';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -163,6 +163,8 @@ class _DataCardState extends State<_DataCard> {
     final tele = context.read<TelemetryController>();
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
+    // iPad popover anchor (D.7): capture before any await invalidates context.
+    final origin = sharePositionFromContext(context);
     try {
       final csv = await tele.exportHistoryCsv();
       if (!csv.contains('\n')) {
@@ -171,9 +173,10 @@ class _DataCardState extends State<_DataCard> {
       }
       await shareTextAsFile(
         content: csv,
-        filename: 'open-rce-batt-history-${exportStamp()}.csv',
+        filename: 'opensmartbatt-history-${exportStamp()}.csv',
         mimeType: 'text/csv',
         subject: l10n.settingsExportSubjectAllData,
+        sharePositionOrigin: origin,
       );
     } catch (e) {
       messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.commonExportFailed('$e'))));
@@ -250,6 +253,8 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
     final tele = context.read<TelemetryController>();
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
+    // iPad popover anchor (D.7): capture before any await invalidates context.
+    final origin = sharePositionFromContext(context);
     try {
       final log = await tele.exportLog();
       if (log.trim().isEmpty) {
@@ -258,9 +263,10 @@ class _DiagnosticsCardState extends State<_DiagnosticsCard> {
       }
       await shareTextAsFile(
         content: log,
-        filename: 'open-rce-batt-${exportStamp()}.log',
+        filename: 'opensmartbatt-${exportStamp()}.log',
         mimeType: 'text/plain',
         subject: l10n.settingsExportSubjectDiagLog,
+        sharePositionOrigin: origin,
       );
     } catch (e) {
       messenger.showSnackBar(SnackBar(duration: const Duration(milliseconds: 1600), content: Text(l10n.commonExportFailed('$e'))));

@@ -1,4 +1,4 @@
-/// Open-RCE-Batt — alias-naming dialog (mockup `.aliasdlg` / `.adlg`).
+/// OpenSmartBatt — alias-naming dialog (mockup `.aliasdlg` / `.adlg`).
 ///
 /// Shown after connecting a freshly-discovered device ("儲存裝置") so the user
 /// can give it a memorable alias for quick reconnect, and reused as the rename
@@ -8,7 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:open_rce_batt/l10n/app_localizations.dart';
+import 'package:open_smart_batt/l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 /// Prompt for a device alias.

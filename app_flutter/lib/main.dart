@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:open_rce_batt/l10n/app_localizations.dart';
+import 'package:open_smart_batt/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,7 +20,7 @@ import 'ui/settings/settings_screen.dart';
 import 'ui/util/update_check.dart';
 
 /// Public project page (shown in the community disclaimer + Settings → About).
-const String kProjectUrl = 'https://github.com/WinePaster/open-rce-batt';
+const String kProjectUrl = 'https://github.com/WinePaster/open-smart-batt';
 
 
 Future<void> main() async {
@@ -89,7 +89,7 @@ class _OpenRceBattAppState extends State<OpenRceBattApp> {
       // Rebuild MaterialApp when the theme preference changes.
       child: Consumer<SettingsController>(
         builder: (context, settings, _) => MaterialApp(
-          title: 'Open-RCE-Batt',
+          title: 'OpenSmartBatt',
           debugShowCheckedModeBanner: false,
           // Real light / dark themes (DEFAULT light); `auto` follows the OS.
           theme: AppTheme.light(),
@@ -187,14 +187,22 @@ class _RootShellState extends State<RootShell> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: const _BrandAppBar(),
-      body: IndexedStack(
-        index: _tab.index,
-        children: [
-          const DashboardPage(),
-          // Re-keyed on each switch to 歷史 so it reloads the latest records.
-          HistoryScreen(key: ValueKey(_historyEpoch)),
-          const SettingsScreen(),
-        ],
+      // The AppBar already insets the top (status bar / notch / Dynamic Island)
+      // and the NavigationBar insets the bottom (home indicator); guard the
+      // body's horizontal edges too (top: false / bottom: false avoid double
+      // padding). No-op on Android, where these insets are 0.
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: IndexedStack(
+          index: _tab.index,
+          children: [
+            const DashboardPage(),
+            // Re-keyed on each switch to 歷史 so it reloads the latest records.
+            HistoryScreen(key: ValueKey(_historyEpoch)),
+            const SettingsScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(

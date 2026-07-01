@@ -1,7 +1,7 @@
-# Open-RCE-Batt
+# OpenSmartBatt
 
 > Community self-help · Right-to-repair · Independent clean-room reimplementation
-> An Android app (Flutter) + protocol documentation to keep monitoring RCE smart
+> An Android / iOS app (Flutter) + protocol documentation to keep monitoring RCE smart
 > capacitors/batteries after the vendor's cloud shutdown.
 
 **中文版 → [README.md](./README.md)**
@@ -23,18 +23,24 @@ by their lawful owners.
 
 - This is an **independent clean-room reimplementation**, written solely from
   **publicly observable protocol facts**, not by copying the vendor's code.
-- This project is **not affiliated with, endorsed by, or licensed by** RCE, its
-  affiliates, or any successor.
+- This project is **not affiliated with, endorsed by, or licensed by** RCE 低碳動能開發股份有限公司
+  (RCE Low-Carbon Energy Development Co., Ltd.), its affiliates, or any successor.
 - This project is **non-commercial**. Its only purpose is to help owners of
   **already-purchased** RCE hardware exercise their right to repair.
 - We **do not distribute** any of the original app's code, assets, icons, or strings.
 - Protocol facts and data formats are functional facts generally not protected by
   copyright; see [`COPYRIGHT.md`](./COPYRIGHT.md).
 
+## Naming
+
+The project and the app share one neutral name: **OpenSmartBatt** (repo `open-smart-batt`, bundle id / applicationId `com.winepaster.openSmartBatt`, Dart package `open_smart_batt`). The name is deliberately neutral / non-trademarked to avoid App Store / TestFlight rejection of a non-brand-holder over the vendor's trademarks (Guideline 4.1 / 5.2).
+
+**"RCE" is the hardware, not the app.** OpenSmartBatt is a community client *compatible with* RCE (RCE 低碳動能開發股份有限公司 / "iBatt" brand) low-carbon capacitors/batteries. References to `RCE` in the code and docs (BLE device-name match, the non-affiliation disclaimer, "compatible with RCE devices") are functional / nominative fair use — describing the target hardware, not claiming the vendor's brand. This project is not affiliated with, endorsed by, or licensed by RCE 低碳動能開發股份有限公司, its affiliates, or any successor.
+
 ## Repository structure
 
 ```
-open-rce-batt/
+open-smart-batt/
 ├── README.md / README.en.md      docs (zh / en)
 ├── LICENSE / COPYRIGHT / CLEANROOM / CONTRIBUTING
 ├── docs/
@@ -44,11 +50,11 @@ open-rce-batt/
 │   ├── HCI_CAPTURE_GUIDE.md       community guide to capture unlock packets
 │   ├── VERSIONING.md             version scheme
 │   └── UNVERIFIED.md             items still needing hardware confirmation
-├── app_flutter/                  ★ Android app (Flutter, written from the spec)
+├── app_flutter/                  ★ Android / iOS app (Flutter, written from the spec)
 ├── app/                          reference Python (bleak) CLI client
 ├── tools/parse_btsnoop.py        btsnoop → GATT extractor (privacy-safe)
 ├── mockup/index.html             UI design preview
-└── .github/workflows/            CI + auto-versioned APK release
+└── .github/workflows/            CI (Android + iOS compile smoke test) + auto-versioned APK / IPA release
 ```
 
 `docs/` holds the protocol spec & verification (**facts**). `app_flutter/` and `app/`
@@ -71,11 +77,39 @@ are written **only** from `docs/`, never touching the original app.
 
 ## Install
 
+### Android
+
 - **Build from source (recommended)**: install Flutter, then
   `cd app_flutter && flutter build apk --release`; the APK lands in
   `build/app/outputs/flutter-apk/`.
 - Or let the GitHub Actions **Release APK** workflow produce it (with a SHA256;
   currently debug-signed — verify the hash).
+- Android can be **sideloaded onto any device with no account** (debug-signed APK +
+  SHA256 trust).
+
+### iOS
+
+> **App store name: `OpenSmartBatt`** (bundle id `com.winepaster.openSmartBatt`).
+> The iOS build deliberately uses a neutral, non-trademarked app identity to avoid
+> App Store rejection of a non-brand-holder over the vendor's marks (RCE/iBatt;
+> Guideline 4.1/5.2). The project (repo `open-smart-batt`) is still a community client
+> **compatible with RCE 低碳動能 hardware** — stating "compatible with RCE devices" is
+> nominative fair use and does not conflict with a neutral app identity.
+
+- iOS must be built from source on **macOS + Xcode**: `cd app_flutter && flutter build ios`
+  (contributors can verify locally with `--no-codesign`, no Apple account needed).
+- **iOS has no account-free install path like Android's.** Apple platforms do not allow
+  arbitrary account-free sideloading:
+  - **TestFlight**: requires the maintainer's **paid Apple Developer account**, passing
+    Beta App Review; each build expires after 90 days; external testing is capped at
+    10000 testers.
+  - **App Store**: requires full review + the $99/year account.
+  - A free Apple ID local sideload lasts only 7 days and requires **the user** to own a
+    Mac + Xcode to re-sign.
+- In short: **an owner with only an iPhone and no Mac/Apple account has no directly
+  installable path on iOS.** Set expectations accordingly — do not assume parity with the
+  Android APK flow. See [`docs/VERSIONING.md`](./docs/VERSIONING.md) for the iOS version /
+  IPA notes.
 
 ## Safety note
 
